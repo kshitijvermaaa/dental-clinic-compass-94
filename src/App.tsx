@@ -8,6 +8,10 @@ import { Layout } from "@/components/Layout";
 import Index from "./pages/Index";
 import RegisterPatient from "./pages/RegisterPatient";
 import PatientSearch from "./pages/PatientSearch";
+import Appointments from "./pages/Appointments";
+import Prescriptions from "./pages/Prescriptions";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +32,26 @@ const App = () => (
           <Route path="/search" element={
             <Layout>
               <PatientSearch />
+            </Layout>
+          } />
+          <Route path="/appointments" element={
+            <Layout>
+              <Appointments />
+            </Layout>
+          } />
+          <Route path="/prescriptions" element={
+            <Layout>
+              <Prescriptions />
+            </Layout>
+          } />
+          <Route path="/reports" element={
+            <Layout>
+              <Reports />
+            </Layout>
+          } />
+          <Route path="/settings" element={
+            <Layout>
+              <Settings />
             </Layout>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

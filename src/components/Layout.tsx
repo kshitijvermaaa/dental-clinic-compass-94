@@ -1,7 +1,8 @@
 
 import React, { ReactNode } from 'react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { Home, UserPlus, Search, Calendar, FileText, Settings, Activity, Users } from 'lucide-react';
+import { Home, UserPlus, Search, Calendar, FileText, Settings, Activity } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 const navigationItems = [
   {
@@ -37,41 +38,66 @@ const navigationItems = [
 ];
 
 const AppSidebar = () => {
+  const location = useLocation();
+  
   return (
-    <Sidebar>
+    <Sidebar className="border-r border-slate-200/60 bg-white/95 backdrop-blur-sm">
       <SidebarContent>
-        <div className="p-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-1">DentalCare Pro</h2>
+        <div className="p-6 border-b border-slate-100">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-1">
+            DentalCare Pro
+          </h2>
           <p className="text-sm text-slate-600">Clinic Management</p>
         </div>
         
-        <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+        <SidebarGroup className="p-4">
+          <SidebarGroupLabel className="text-slate-500 font-medium mb-2">Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="space-y-1">
+              {navigationItems.map((item) => {
+                const isActive = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a 
+                        href={item.url} 
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                          isActive 
+                            ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm' 
+                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900'
+                        }`}
+                      >
+                        <item.icon className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
+                          isActive ? 'text-blue-600' : 'text-slate-500'
+                        }`} />
+                        <span className="font-medium">{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+        <SidebarGroup className="p-4 border-t border-slate-100 mt-auto">
+          <SidebarGroupLabel className="text-slate-500 font-medium mb-2">Administration</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
+                  <a 
+                    href="/settings" 
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                      location.pathname === '/settings' 
+                        ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm' 
+                        : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900'
+                    }`}
+                  >
+                    <Settings className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
+                      location.pathname === '/settings' ? 'text-blue-600' : 'text-slate-500'
+                    }`} />
+                    <span className="font-medium">Settings</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -90,13 +116,15 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-slate-50">
         <AppSidebar />
-        <main className="flex-1">
-          <div className="p-4 border-b border-slate-200 bg-white">
-            <SidebarTrigger />
+        <main className="flex-1 overflow-hidden">
+          <div className="p-4 border-b border-slate-200/60 bg-white/95 backdrop-blur-sm shadow-sm">
+            <SidebarTrigger className="hover:bg-slate-100 hover:scale-105 transition-all duration-200" />
           </div>
-          {children}
+          <div className="overflow-auto h-[calc(100vh-73px)]">
+            {children}
+          </div>
         </main>
       </div>
     </SidebarProvider>
