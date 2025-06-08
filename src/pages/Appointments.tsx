@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Plus, Search, User, Phone, FileText } from 'lucide-react';
+import { Calendar, Clock, Plus, Search, User, Phone, FileText, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AppointmentForm } from '@/components/appointments/AppointmentForm';
+import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
 
 const appointmentsData = [
   {
@@ -43,6 +45,9 @@ const appointmentsData = [
 const Appointments = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const [showPatientDetails, setShowPatientDetails] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -60,8 +65,18 @@ const Appointments = () => {
   const filteredAppointments = appointmentsData.filter(appointment =>
     appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     appointment.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    appointment.phone.includes(searchTerm)
+    appointment.phone.includes(searchTerm) ||
+    appointment.reason.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleViewPatient = (patientId: string) => {
+    setSelectedPatientId(patientId);
+    setShowPatientDetails(true);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -80,11 +95,14 @@ const Appointments = () => {
               <Input
                 placeholder="Search appointments..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-9 w-64"
               />
             </div>
-            <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg">
+            <Button 
+              onClick={() => setShowAppointmentForm(true)}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg"
+            >
               <Plus className="w-4 h-4 mr-2" />
               New Appointment
             </Button>
@@ -104,62 +122,99 @@ const Appointments = () => {
               })}
             </CardTitle>
             <CardDescription>
-              {filteredAppointments.length} appointments scheduled
+              {filteredAppointments.length} appointments {searchTerm ? 'found' : 'scheduled'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {filteredAppointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:bg-slate-50/50 transition-all duration-300 group"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <Clock className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-slate-900">{appointment.patientName}</span>
-                      <span className="text-sm text-slate-500">({appointment.patientId})</span>
-                      <span className="text-sm font-mono text-slate-600">{appointment.time}</span>
-                    </div>
-                    <div className="mt-1 text-sm text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-3 h-3" />
-                        {appointment.phone}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        {appointment.reason}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className={`${getStatusColor(appointment.status)} border font-medium`}>
-                    {appointment.status}
-                  </Badge>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate(`/search?patient=${appointment.patientId}`)}
-                    >
-                      <User className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate('/prescriptions')}
-                    >
-                      <FileText className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+            {filteredAppointments.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                <p>{searchTerm ? 'No appointments found matching your search.' : 'No appointments scheduled for today.'}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => setShowAppointmentForm(true)}
+                >
+                  Schedule New Appointment
+                </Button>
               </div>
-            ))}
+            ) : (
+              filteredAppointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:bg-slate-50/50 transition-all duration-300 group"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-slate-900">{appointment.patientName}</span>
+                        <span className="text-sm text-slate-500">({appointment.patientId})</span>
+                        <span className="text-sm font-mono text-slate-600">{appointment.time}</span>
+                      </div>
+                      <div className="mt-1 text-sm text-slate-600">
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3 h-3" />
+                          {appointment.phone}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          {appointment.reason}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge className={`${getStatusColor(appointment.status)} border font-medium`}>
+                      {appointment.status}
+                    </Badge>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewPatient(appointment.patientId)}
+                        title="View Patient Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/search?patient=${appointment.patientId}`)}
+                        title="Patient Records"
+                      >
+                        <User className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate('/prescriptions')}
+                        title="Prescriptions"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Appointment Form Dialog */}
+      <AppointmentForm 
+        open={showAppointmentForm} 
+        onOpenChange={setShowAppointmentForm} 
+      />
+
+      {/* Patient Details Dialog */}
+      <PatientDetailsDialog
+        open={showPatientDetails}
+        onOpenChange={setShowPatientDetails}
+        patientId={selectedPatientId}
+      />
     </div>
   );
 };

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, User, Phone, Calendar, FileText, Download, Eye, Plus } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
+import { useToast } from '@/hooks/use-toast';
 
 const patientsData = [
   {
@@ -46,7 +48,10 @@ const patientsData = [
 const PatientSearch = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('patient') || '');
+  const [showPatientDetails, setShowPatientDetails] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   const filteredPatients = patientsData.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,6 +69,22 @@ const PatientSearch = () => {
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
+  };
+
+  const handleViewPatient = (patientId: string) => {
+    setSelectedPatientId(patientId);
+    setShowPatientDetails(true);
+  };
+
+  const handleDownloadRecords = (patientName: string) => {
+    toast({
+      title: "Download Started",
+      description: `Downloading medical records for ${patientName}...`,
+    });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
 
   return (
@@ -103,7 +124,7 @@ const PatientSearch = () => {
               <Input
                 placeholder="Enter patient name, ID, phone, or email..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-9 text-base h-12"
               />
             </div>
@@ -118,14 +139,14 @@ const PatientSearch = () => {
               Search Results
             </CardTitle>
             <CardDescription>
-              {filteredPatients.length} patients found
+              {filteredPatients.length} patients {searchTerm ? 'found' : 'in database'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {filteredPatients.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <User className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>No patients found matching your search.</p>
+                <p>{searchTerm ? 'No patients found matching your search.' : 'Start typing to search for patients.'}</p>
                 <Button 
                   variant="outline" 
                   className="mt-4"
@@ -172,6 +193,7 @@ const PatientSearch = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate('/appointments')}
+                      title="View Appointments"
                     >
                       <Calendar className="w-4 h-4" />
                     </Button>
@@ -179,13 +201,24 @@ const PatientSearch = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate('/prescriptions')}
+                      title="View Prescriptions"
                     >
                       <FileText className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewPatient(patient.id)}
+                      title="View Patient Details"
+                    >
                       <Eye className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDownloadRecords(patient.name)}
+                      title="Download Records"
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>
@@ -195,6 +228,13 @@ const PatientSearch = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Patient Details Dialog */}
+      <PatientDetailsDialog
+        open={showPatientDetails}
+        onOpenChange={setShowPatientDetails}
+        patientId={selectedPatientId}
+      />
     </div>
   );
 };
