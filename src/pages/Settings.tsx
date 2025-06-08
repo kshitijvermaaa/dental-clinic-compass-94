@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Settings, Building2, User, Save, Upload, Bell, Lock, Database } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, User, Save, Upload, Bell, Lock, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
@@ -185,7 +185,7 @@ const Settings = () => {
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-blue-600" />
+                <SettingsIcon className="w-5 h-5 text-blue-600" />
                 System Settings
               </CardTitle>
               <CardDescription>
