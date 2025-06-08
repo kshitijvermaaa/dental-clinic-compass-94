@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Search, Plus, Eye, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PrescriptionForm } from '@/components/prescriptions/PrescriptionForm';
 
 const prescriptionsData = [
   {
@@ -40,6 +41,7 @@ const prescriptionsData = [
 const Prescriptions = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,7 +81,11 @@ const Prescriptions = () => {
                 className="pl-9 w-64"
               />
             </div>
-            <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg">
+            <Button 
+              onClick={() => setShowPrescriptionForm(true)}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg"
+              title="Create New Prescription"
+            >
               <Plus className="w-4 h-4 mr-2" />
               New Prescription
             </Button>
@@ -130,14 +136,23 @@ const Prescriptions = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/search?patient=${prescription.patientId}`)}
+                      onClick={() => navigate(`/patient-record?patient=${prescription.patientId}`)}
+                      title="View Patient Record"
                     >
                       <User className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      title="View Prescription Details"
+                    >
                       <Eye className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      title="Download Prescription"
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>
@@ -147,6 +162,12 @@ const Prescriptions = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Prescription Form Dialog */}
+      <PrescriptionForm 
+        open={showPrescriptionForm} 
+        onOpenChange={setShowPrescriptionForm} 
+      />
     </div>
   );
 };

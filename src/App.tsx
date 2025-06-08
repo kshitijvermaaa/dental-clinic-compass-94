@@ -1,65 +1,41 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { QueryClient } from 'react-query';
+import Layout from './components/layout/Layout';
+import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
+import Appointments from './pages/Appointments';
+import PatientSearch from './pages/PatientSearch';
+import Prescriptions from './pages/Prescriptions';
+import RegisterPatient from './pages/RegisterPatient';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
+import { Toaster } from '@/components/ui/toaster';
+import PatientRecord from './pages/PatientRecord';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Layout } from "@/components/Layout";
-import Index from "./pages/Index";
-import RegisterPatient from "./pages/RegisterPatient";
-import PatientSearch from "./pages/PatientSearch";
-import Appointments from "./pages/Appointments";
-import Prescriptions from "./pages/Prescriptions";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+function App() {
+  return (
+    <QueryClient>
+      <Router>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/register" element={
-            <Layout>
-              <RegisterPatient />
-            </Layout>
-          } />
-          <Route path="/search" element={
-            <Layout>
-              <PatientSearch />
-            </Layout>
-          } />
-          <Route path="/appointments" element={
-            <Layout>
-              <Appointments />
-            </Layout>
-          } />
-          <Route path="/prescriptions" element={
-            <Layout>
-              <Prescriptions />
-            </Layout>
-          } />
-          <Route path="/reports" element={
-            <Layout>
-              <Reports />
-            </Layout>
-          } />
-          <Route path="/settings" element={
-            <Layout>
-              <Settings />
-            </Layout>
-          } />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Index />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="appointments" element={<Appointments />} />
+            <Route path="search" element={<PatientSearch />} />
+            <Route path="patient-record" element={<PatientRecord />} />
+            <Route path="prescriptions" element={<Prescriptions />} />
+            <Route path="register" element={<RegisterPatient />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        <Toaster />
+      </Router>
+    </QueryClient>
+  );
+}
 
 export default App;

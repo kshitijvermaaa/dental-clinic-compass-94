@@ -101,6 +101,7 @@ const PatientSearch = () => {
           <Button 
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg"
             onClick={() => navigate('/register')}
+            title="Register New Patient"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add New Patient
@@ -193,7 +194,7 @@ const PatientSearch = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate('/appointments')}
-                      title="View Appointments"
+                      title="View Patient Appointments"
                     >
                       <Calendar className="w-4 h-4" />
                     </Button>
@@ -201,7 +202,7 @@ const PatientSearch = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate('/prescriptions')}
-                      title="View Prescriptions"
+                      title="View Patient Prescriptions"
                     >
                       <FileText className="w-4 h-4" />
                     </Button>
@@ -209,15 +210,23 @@ const PatientSearch = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => handleViewPatient(patient.id)}
-                      title="View Patient Details"
+                      title="Quick View Patient Details"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={() => navigate(`/patient-record?patient=${patient.id}`)}
+                      title="View Complete Patient Record"
+                    >
+                      <User className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
                       onClick={() => handleDownloadRecords(patient.name)}
-                      title="Download Records"
+                      title="Download Medical Records"
                     >
                       <Download className="w-4 h-4" />
                     </Button>

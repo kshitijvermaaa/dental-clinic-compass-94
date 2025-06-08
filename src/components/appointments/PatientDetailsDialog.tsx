@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, Calendar, FileText, Clock } from 'lucide-react';
+import { User, Phone, Mail, Calendar, FileText, Clock, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface PatientDetailsDialogProps {
@@ -90,7 +90,7 @@ export const PatientDetailsDialog: React.FC<PatientDetailsDialogProps> = ({ open
             Patient Details
           </DialogTitle>
           <DialogDescription>
-            Comprehensive patient information and medical history
+            Quick overview of patient information and medical history
           </DialogDescription>
         </DialogHeader>
         
@@ -165,11 +165,12 @@ export const PatientDetailsDialog: React.FC<PatientDetailsDialogProps> = ({ open
               variant="outline" 
               onClick={() => {
                 onOpenChange(false);
-                navigate(`/search?patient=${patient.id}`);
+                navigate(`/patient-record?patient=${patient.id}`);
               }}
               className="flex-1"
+              title="View Complete Patient Record"
             >
-              <FileText className="w-4 h-4 mr-2" />
+              <Eye className="w-4 h-4 mr-2" />
               Full Record
             </Button>
             <Button 
@@ -178,6 +179,7 @@ export const PatientDetailsDialog: React.FC<PatientDetailsDialogProps> = ({ open
                 navigate('/prescriptions');
               }}
               className="flex-1"
+              title="View/Create Prescriptions"
             >
               <FileText className="w-4 h-4 mr-2" />
               Prescriptions

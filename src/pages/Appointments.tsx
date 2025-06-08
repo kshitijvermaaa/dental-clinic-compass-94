@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Plus, Search, User, Phone, FileText, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { AppointmentForm } from '@/components/appointments/AppointmentForm';
+import { EnhancedAppointmentForm } from '@/components/appointments/EnhancedAppointmentForm';
 import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
 
 const appointmentsData = [
@@ -102,6 +102,7 @@ const Appointments = () => {
             <Button 
               onClick={() => setShowAppointmentForm(true)}
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg"
+              title="Schedule New Appointment"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Appointment
@@ -181,8 +182,8 @@ const Appointments = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => navigate(`/search?patient=${appointment.patientId}`)}
-                        title="Patient Records"
+                        onClick={() => navigate(`/patient-record?patient=${appointment.patientId}`)}
+                        title="View Full Patient Record"
                       >
                         <User className="w-4 h-4" />
                       </Button>
@@ -190,7 +191,7 @@ const Appointments = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => navigate('/prescriptions')}
-                        title="Prescriptions"
+                        title="View/Create Prescriptions"
                       >
                         <FileText className="w-4 h-4" />
                       </Button>
@@ -203,8 +204,8 @@ const Appointments = () => {
         </Card>
       </div>
 
-      {/* Appointment Form Dialog */}
-      <AppointmentForm 
+      {/* Enhanced Appointment Form Dialog */}
+      <EnhancedAppointmentForm 
         open={showAppointmentForm} 
         onOpenChange={setShowAppointmentForm} 
       />
