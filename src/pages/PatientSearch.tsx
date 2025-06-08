@@ -4,229 +4,196 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, User, Phone, MapPin, Calendar, FileText, Eye } from 'lucide-react';
+import { Search, User, Phone, Calendar, FileText, Download, Eye, Plus } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const mockPatients = [
+const patientsData = [
   {
     id: 'P001',
     name: 'John Doe',
-    age: 32,
-    phone: '+91 98765 43210',
-    email: 'john.doe@example.com',
-    address: '123 Main Street, Mumbai',
-    lastVisit: '2024-06-05',
-    totalVisits: 8,
-    status: 'Active',
-    bloodGroup: 'O+',
-    totalPaid: 15000,
-    outstanding: 0
+    phone: '+91 9876543210',
+    email: 'john.doe@email.com',
+    age: 35,
+    gender: 'Male',
+    lastVisit: '2024-06-01',
+    totalVisits: 12,
+    status: 'active'
   },
   {
     id: 'P024',
     name: 'Sarah Johnson',
+    phone: '+91 9876543211',
+    email: 'sarah.j@email.com',
     age: 28,
-    phone: '+91 87654 32109',
-    email: 'sarah.j@example.com',
-    address: '456 Oak Avenue, Delhi',
-    lastVisit: '2024-06-08',
-    totalVisits: 5,
-    status: 'Active',
-    bloodGroup: 'A+',
-    totalPaid: 8500,
-    outstanding: 1200
+    gender: 'Female',
+    lastVisit: '2024-06-05',
+    totalVisits: 8,
+    status: 'active'
   },
   {
     id: 'P035',
     name: 'Mike Wilson',
-    age: 45,
-    phone: '+91 76543 21098',
-    email: 'mike.wilson@example.com',
-    address: '789 Pine Road, Bangalore',
+    phone: '+91 9876543212',
+    email: 'mike.w@email.com',
+    age: 42,
+    gender: 'Male',
     lastVisit: '2024-05-28',
-    totalVisits: 12,
-    status: 'Follow-up',
-    bloodGroup: 'B+',
-    totalPaid: 22000,
-    outstanding: 0
+    totalVisits: 15,
+    status: 'inactive'
   }
 ];
 
 const PatientSearch = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredPatients, setFilteredPatients] = useState(mockPatients);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('patient') || '');
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    if (term === '') {
-      setFilteredPatients(mockPatients);
-    } else {
-      const filtered = mockPatients.filter(patient =>
-        patient.name.toLowerCase().includes(term.toLowerCase()) ||
-        patient.id.toLowerCase().includes(term.toLowerCase()) ||
-        patient.phone.includes(term) ||
-        patient.address.toLowerCase().includes(term.toLowerCase())
-      );
-      setFilteredPatients(filtered);
-    }
-  };
+  const filteredPatients = patientsData.filter(patient =>
+    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.phone.includes(searchTerm) ||
+    patient.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800';
-      case 'Follow-up':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Inactive':
-        return 'bg-gray-100 text-gray-800';
+      case 'active':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'inactive':
+        return 'bg-slate-50 text-slate-700 border-slate-200';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto px-4 py-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <Search className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-slate-900">
-                Patient Search
-              </h1>
-            </div>
-            <p className="text-slate-600">
-              Search patients by name, ID, phone number, or address
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+              Patient Search
+            </h1>
+            <p className="text-slate-600">Find and manage patient records</p>
           </div>
+          <Button 
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg"
+            onClick={() => navigate('/register')}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Patient
+          </Button>
+        </div>
 
-          {/* Search Bar */}
-          <Card className="bg-white border-slate-200 mb-8">
-            <CardHeader>
-              <CardTitle>Search Patients</CardTitle>
-              <CardDescription>
-                Enter patient name, ID, phone number, or address to search
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <Input
-                    placeholder="Search by name, ID, phone, or address..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  Search
+        {/* Search Bar */}
+        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5 text-blue-600" />
+              Search Patients
+            </CardTitle>
+            <CardDescription>
+              Search by name, patient ID, phone number, or email
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder="Enter patient name, ID, phone, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 text-base h-12"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5 text-blue-600" />
+              Search Results
+            </CardTitle>
+            <CardDescription>
+              {filteredPatients.length} patients found
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {filteredPatients.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <User className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                <p>No patients found matching your search.</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => navigate('/register')}
+                >
+                  Register New Patient
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Search Results */}
-          <Card className="bg-white border-slate-200">
-            <CardHeader>
-              <CardTitle>Search Results</CardTitle>
-              <CardDescription>
-                {filteredPatients.length} patient(s) found
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {filteredPatients.map((patient) => (
-                  <div
-                    key={patient.id}
-                    className="border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="w-6 h-6 text-blue-600" />
+            ) : (
+              filteredPatients.map((patient) => (
+                <div
+                  key={patient.id}
+                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:bg-slate-50/50 transition-all duration-300 group"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-slate-900">{patient.name}</span>
+                        <span className="text-sm text-slate-500">({patient.id})</span>
+                        <Badge className={`${getStatusColor(patient.status)} border font-medium text-xs`}>
+                          {patient.status}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 text-sm text-slate-600">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {patient.phone}
+                          </span>
+                          <span>{patient.email}</span>
+                          <span>{patient.age}Y {patient.gender}</span>
                         </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-slate-900">
-                            {patient.name}
-                          </h3>
-                          <p className="text-sm text-slate-600">
-                            ID: {patient.id} • Age: {patient.age} • Blood Group: {patient.bloodGroup}
-                          </p>
+                        <div className="text-xs text-slate-500 mt-1">
+                          Last visit: {patient.lastVisit} • {patient.totalVisits} total visits
                         </div>
                       </div>
-                      <Badge className={getStatusColor(patient.status)}>
-                        {patient.status}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-slate-500" />
-                        <span className="text-sm text-slate-600">{patient.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-slate-500" />
-                        <span className="text-sm text-slate-600">{patient.address}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-slate-500" />
-                        <span className="text-sm text-slate-600">
-                          Last visit: {patient.lastVisit}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="bg-slate-50 p-3 rounded-lg">
-                        <p className="text-xs text-slate-500 mb-1">Total Visits</p>
-                        <p className="text-lg font-semibold text-slate-900">{patient.totalVisits}</p>
-                      </div>
-                      <div className="bg-slate-50 p-3 rounded-lg">
-                        <p className="text-xs text-slate-500 mb-1">Total Paid</p>
-                        <p className="text-lg font-semibold text-green-600">₹{patient.totalPaid.toLocaleString()}</p>
-                      </div>
-                      <div className="bg-slate-50 p-3 rounded-lg">
-                        <p className="text-xs text-slate-500 mb-1">Outstanding</p>
-                        <p className={`text-lg font-semibold ${patient.outstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          ₹{patient.outstanding.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Profile
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        New Appointment
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Medical History
-                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {filteredPatients.length === 0 && searchTerm && (
-                <div className="text-center py-12">
-                  <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-slate-900 mb-2">No patients found</h3>
-                  <p className="text-slate-600">
-                    Try adjusting your search terms or register a new patient
-                  </p>
-                  <Button className="mt-4 bg-blue-600 hover:bg-blue-700">
-                    Register New Patient
-                  </Button>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/appointments')}
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/prescriptions')}
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

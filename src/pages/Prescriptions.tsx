@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Download, Search, Plus, Eye } from 'lucide-react';
+import { FileText, Download, Search, Plus, Eye, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const prescriptionsData = [
   {
@@ -36,6 +38,9 @@ const prescriptionsData = [
 ];
 
 const Prescriptions = () => {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -46,6 +51,12 @@ const Prescriptions = () => {
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
+
+  const filteredPrescriptions = prescriptionsData.filter(prescription =>
+    prescription.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    prescription.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    prescription.diagnosis.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -59,10 +70,15 @@ const Prescriptions = () => {
             <p className="text-slate-600">Manage patient prescriptions and medicines</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="hover:scale-105 transition-transform duration-200">
-              <Search className="w-4 h-4 mr-2" />
-              Search
-            </Button>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder="Search prescriptions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-64"
+              />
+            </div>
             <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg">
               <Plus className="w-4 h-4 mr-2" />
               New Prescription
@@ -78,11 +94,11 @@ const Prescriptions = () => {
               Recent Prescriptions
             </CardTitle>
             <CardDescription>
-              {prescriptionsData.length} prescriptions found
+              {filteredPrescriptions.length} prescriptions found
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {prescriptionsData.map((prescription) => (
+            {filteredPrescriptions.map((prescription) => (
               <div
                 key={prescription.id}
                 className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:bg-slate-50/50 transition-all duration-300 group"
@@ -111,6 +127,13 @@ const Prescriptions = () => {
                     {prescription.status}
                   </Badge>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/search?patient=${prescription.patientId}`)}
+                    >
+                      <User className="w-4 h-4" />
+                    </Button>
                     <Button variant="outline" size="sm">
                       <Eye className="w-4 h-4" />
                     </Button>

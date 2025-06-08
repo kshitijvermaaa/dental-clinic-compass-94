@@ -2,7 +2,7 @@
 import React, { ReactNode } from 'react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Home, UserPlus, Search, Calendar, FileText, Settings, Activity } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 
 const navigationItems = [
   {
@@ -59,8 +59,8 @@ const AppSidebar = () => {
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <a 
-                        href={item.url} 
+                      <Link 
+                        to={item.url} 
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                           isActive 
                             ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm' 
@@ -71,7 +71,7 @@ const AppSidebar = () => {
                           isActive ? 'text-blue-600' : 'text-slate-500'
                         }`} />
                         <span className="font-medium">{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -86,8 +86,8 @@ const AppSidebar = () => {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a 
-                    href="/settings" 
+                  <Link 
+                    to="/settings" 
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                       location.pathname === '/settings' 
                         ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm' 
@@ -98,7 +98,7 @@ const AppSidebar = () => {
                       location.pathname === '/settings' ? 'text-blue-600' : 'text-slate-500'
                     }`} />
                     <span className="font-medium">Settings</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

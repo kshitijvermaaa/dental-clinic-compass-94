@@ -1,13 +1,37 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Settings as SettingsIcon, User, Building, Bell, Shield, Upload } from 'lucide-react';
+import { Settings, Building2, User, Save, Upload, Bell, Lock, Database } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
+  const { toast } = useToast();
+  const [clinicInfo, setClinicInfo] = useState({
+    name: 'DentalCare Pro Clinic',
+    address: '123 Main Street, Medical District',
+    phone: '+91 9876543210',
+    email: 'info@dentalcarepro.com',
+    website: 'www.dentalcarepro.com'
+  });
+
+  const [doctorInfo, setDoctorInfo] = useState({
+    name: 'Dr. John Smith',
+    qualification: 'BDS, MDS (Oral Surgery)',
+    regNumber: 'REG123456',
+    experience: '15 years'
+  });
+
+  const handleSave = () => {
+    toast({
+      title: "Settings Saved",
+      description: "Your clinic settings have been updated successfully.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -16,120 +40,184 @@ const Settings = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
             Settings
           </h1>
-          <p className="text-slate-600">Manage your clinic and system preferences</p>
+          <p className="text-slate-600">Manage your clinic and application settings</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Navigation */}
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm h-fit">
-            <CardContent className="p-4">
-              <nav className="space-y-2">
-                {[
-                  { icon: User, label: 'Profile', active: true },
-                  { icon: Building, label: 'Clinic Info' },
-                  { icon: Bell, label: 'Notifications' },
-                  { icon: Shield, label: 'Security' },
-                  { icon: SettingsIcon, label: 'System' }
-                ].map((item, index) => (
-                  <button
-                    key={index}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
-                      item.active 
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                        : 'hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
+        {/* Clinic Information */}
+        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              Clinic Information
+            </CardTitle>
+            <CardDescription>
+              Update your clinic details and contact information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clinic-name">Clinic Name</Label>
+                <Input
+                  id="clinic-name"
+                  value={clinicInfo.name}
+                  onChange={(e) => setClinicInfo({ ...clinicInfo, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clinic-phone">Phone Number</Label>
+                <Input
+                  id="clinic-phone"
+                  value={clinicInfo.phone}
+                  onChange={(e) => setClinicInfo({ ...clinicInfo, phone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="clinic-address">Address</Label>
+              <Textarea
+                id="clinic-address"
+                value={clinicInfo.address}
+                onChange={(e) => setClinicInfo({ ...clinicInfo, address: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clinic-email">Email</Label>
+                <Input
+                  id="clinic-email"
+                  type="email"
+                  value={clinicInfo.email}
+                  onChange={(e) => setClinicInfo({ ...clinicInfo, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clinic-website">Website</Label>
+                <Input
+                  id="clinic-website"
+                  value={clinicInfo.website}
+                  onChange={(e) => setClinicInfo({ ...clinicInfo, website: e.target.value })}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Doctor Information */}
+        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5 text-blue-600" />
+              Doctor Information
+            </CardTitle>
+            <CardDescription>
+              Update doctor credentials and professional details
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="doctor-name">Doctor Name</Label>
+                <Input
+                  id="doctor-name"
+                  value={doctorInfo.name}
+                  onChange={(e) => setDoctorInfo({ ...doctorInfo, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="doctor-reg">Registration Number</Label>
+                <Input
+                  id="doctor-reg"
+                  value={doctorInfo.regNumber}
+                  onChange={(e) => setDoctorInfo({ ...doctorInfo, regNumber: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="doctor-qualification">Qualification</Label>
+                <Input
+                  id="doctor-qualification"
+                  value={doctorInfo.qualification}
+                  onChange={(e) => setDoctorInfo({ ...doctorInfo, qualification: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="doctor-experience">Experience</Label>
+                <Input
+                  id="doctor-experience"
+                  value={doctorInfo.experience}
+                  onChange={(e) => setDoctorInfo({ ...doctorInfo, experience: e.target.value })}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Additional Settings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Letterhead Upload */}
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-blue-600" />
+                Letterhead
+              </CardTitle>
+              <CardDescription>
+                Upload clinic letterhead for prescriptions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                <p className="text-sm text-slate-600">Click to upload letterhead</p>
+                <p className="text-xs text-slate-500">PDF, JPG, PNG up to 5MB</p>
+              </div>
+              <Button variant="outline" className="w-full">
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Letterhead
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Settings Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Profile Settings */}
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-blue-600" />
-                  Profile Information
-                </CardTitle>
-                <CardDescription>
-                  Update your personal and professional details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" placeholder="Dr. John" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" placeholder="Smith" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="doctor@clinic.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="specialization">Specialization</Label>
-                  <Input id="specialization" placeholder="General Dentistry" />
-                </div>
-                <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                  Save Changes
-                </Button>
-              </CardContent>
-            </Card>
+          {/* System Settings */}
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-600" />
+                System Settings
+              </CardTitle>
+              <CardDescription>
+                Configure application preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button variant="outline" className="w-full justify-start">
+                <Bell className="w-4 h-4 mr-2" />
+                Notification Settings
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <Lock className="w-4 h-4 mr-2" />
+                Security Settings
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <Database className="w-4 h-4 mr-2" />
+                Backup & Restore
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Clinic Settings */}
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="w-5 h-5 text-blue-600" />
-                  Clinic Information
-                </CardTitle>
-                <CardDescription>
-                  Configure your clinic details and letterhead
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clinicName">Clinic Name</Label>
-                  <Input id="clinicName" placeholder="Smile Dental Clinic" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" placeholder="123 Main Street, City" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input id="phone" placeholder="+91 98765 43210" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="license">License Number</Label>
-                    <Input id="license" placeholder="DL123456" />
-                  </div>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label>Letterhead Logo</Label>
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                    <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm text-slate-600">Drop your logo here or click to upload</p>
-                    <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 2MB</p>
-                  </div>
-                </div>
-                <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                  Save Clinic Info
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleSave}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Changes
+          </Button>
         </div>
       </div>
     </div>

@@ -1,44 +1,49 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, Plus, Search } from 'lucide-react';
+import { Calendar, Clock, Plus, Search, User, Phone, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const appointmentsData = [
   {
-    id: 1,
-    date: '2024-06-08',
-    time: '09:00 AM',
+    id: 'A001',
     patientName: 'John Doe',
     patientId: 'P001',
-    type: 'Cleaning',
+    time: '09:00 AM',
+    phone: '+91 9876543210',
+    reason: 'Routine Checkup',
     status: 'scheduled',
-    duration: '30 min'
+    type: 'checkup'
   },
   {
-    id: 2,
-    date: '2024-06-08',
-    time: '10:30 AM',
+    id: 'A002',
     patientName: 'Sarah Johnson',
     patientId: 'P024',
-    type: 'Root Canal',
+    time: '10:30 AM',
+    phone: '+91 9876543211',
+    reason: 'Root Canal Follow-up',
     status: 'in-progress',
-    duration: '90 min'
+    type: 'treatment'
   },
   {
-    id: 3,
-    date: '2024-06-09',
-    time: '02:00 PM',
+    id: 'A003',
     patientName: 'Mike Wilson',
     patientId: 'P035',
-    type: 'Consultation',
-    status: 'scheduled',
-    duration: '45 min'
+    time: '02:00 PM',
+    phone: '+91 9876543212',
+    reason: 'Teeth Cleaning',
+    status: 'completed',
+    type: 'cleaning'
   }
 ];
 
 const Appointments = () => {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled':
@@ -52,6 +57,12 @@ const Appointments = () => {
     }
   };
 
+  const filteredAppointments = appointmentsData.filter(appointment =>
+    appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.phone.includes(searchTerm)
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -61,13 +72,18 @@ const Appointments = () => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
               Appointments
             </h1>
-            <p className="text-slate-600">Manage and schedule patient appointments</p>
+            <p className="text-slate-600">Manage patient appointments and schedules</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="hover:scale-105 transition-transform duration-200">
-              <Search className="w-4 h-4 mr-2" />
-              Search
-            </Button>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder="Search appointments..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-64"
+              />
+            </div>
             <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:scale-105 transition-all duration-200 shadow-lg">
               <Plus className="w-4 h-4 mr-2" />
               New Appointment
@@ -75,56 +91,46 @@ const Appointments = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Today', value: '8', color: 'blue' },
-            { label: 'This Week', value: '24', color: 'green' },
-            { label: 'Pending', value: '3', color: 'yellow' },
-            { label: 'Completed', value: '156', color: 'purple' }
-          ].map((stat, index) => (
-            <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md">
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-slate-900">{stat.value}</div>
-                <div className="text-sm text-slate-600">{stat.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Appointments List */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        {/* Today's Date */}
+        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-blue-600" />
-              Upcoming Appointments
+              Today's Schedule - {new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
             </CardTitle>
             <CardDescription>
-              {appointmentsData.length} appointments scheduled
+              {filteredAppointments.length} appointments scheduled
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {appointmentsData.map((appointment) => (
+            {filteredAppointments.map((appointment) => (
               <div
                 key={appointment.id}
                 className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:bg-slate-50/50 transition-all duration-300 group"
               >
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    <Calendar className="w-5 h-5 text-blue-600" />
+                    <Clock className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-slate-900">{appointment.patientName}</span>
                       <span className="text-sm text-slate-500">({appointment.patientId})</span>
+                      <span className="text-sm font-mono text-slate-600">{appointment.time}</span>
                     </div>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-slate-600">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {appointment.time}
-                      </span>
-                      <span>{appointment.duration}</span>
-                      <span>{appointment.type}</span>
+                    <div className="mt-1 text-sm text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3 h-3" />
+                        {appointment.phone}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {appointment.reason}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -132,9 +138,22 @@ const Appointments = () => {
                   <Badge className={`${getStatusColor(appointment.status)} border font-medium`}>
                     {appointment.status}
                   </Badge>
-                  <Button variant="outline" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    View
-                  </Button>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/search?patient=${appointment.patientId}`)}
+                    >
+                      <User className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/prescriptions')}
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
