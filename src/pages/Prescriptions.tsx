@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,8 @@ import { FileText, Download, Search, Plus, Eye, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PrescriptionForm } from '@/components/prescriptions/PrescriptionForm';
 import { PrescriptionViewer } from '@/components/prescriptions/PrescriptionViewer';
+import { useSettings } from '@/contexts/SettingsContext';
+import jsPDF from 'jspdf';
 
 const prescriptionsData = [
   {
@@ -41,6 +42,7 @@ const prescriptionsData = [
 
 const Prescriptions = () => {
   const navigate = useNavigate();
+  const { clinicName, doctorName, licenseNumber } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState<any>(null);
@@ -69,39 +71,74 @@ const Prescriptions = () => {
   };
 
   const handleDownloadPrescription = (prescription: any) => {
-    // Direct download functionality
-    const content = `
-DENTAL PRESCRIPTION
-
-Clinic: DentalCare Pro Clinic
-Date: ${prescription.date}
-Prescription ID: ${prescription.id}
-
-Patient Information:
-Name: ${prescription.patientName}
-Patient ID: ${prescription.patientId}
-
-Diagnosis: ${prescription.diagnosis}
-
-Prescribed Medications:
-${prescription.medicines.map((med: string, index: number) => `${index + 1}. ${med}`).join('\n')}
-
-Doctor: Dr. Smith
-License: DL12345
-
----
-This is a computer-generated prescription.
-    `;
-
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `prescription-${prescription.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    const doc = new jsPDF();
+    
+    // Add letterhead
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text(clinicName, 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Dental Care & Treatment Center', 105, 30, { align: 'center' });
+    doc.text('123 Medical Street, Health City | Phone: +91 9876543210', 105, 37, { align: 'center' });
+    
+    // Draw header line
+    doc.setLineWidth(0.5);
+    doc.line(20, 45, 190, 45);
+    
+    // Prescription header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRESCRIPTION', 105, 55, { align: 'center' });
+    
+    // Prescription details
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Prescription ID: ${prescription.id}`, 20, 70);
+    doc.text(`Date: ${prescription.date}`, 150, 70);
+    
+    // Patient information box
+    doc.setLineWidth(0.3);
+    doc.rect(20, 80, 170, 25);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PATIENT INFORMATION', 25, 88);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Name: ${prescription.patientName}`, 25, 95);
+    doc.text(`Patient ID: ${prescription.patientId}`, 25, 102);
+    
+    // Diagnosis
+    doc.setFont('helvetica', 'bold');
+    doc.text('DIAGNOSIS:', 20, 120);
+    doc.setFont('helvetica', 'normal');
+    doc.text(prescription.diagnosis, 20, 127);
+    
+    // Medications
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRESCRIBED MEDICATIONS:', 20, 145);
+    doc.setFont('helvetica', 'normal');
+    
+    let yPosition = 152;
+    prescription.medicines.forEach((medicine: string, index: number) => {
+      doc.text(`${index + 1}. ${medicine}`, 25, yPosition);
+      yPosition += 7;
+    });
+    
+    // Doctor signature area
+    yPosition += 20;
+    doc.setLineWidth(0.3);
+    doc.line(20, yPosition, 90, yPosition);
+    doc.text(`${doctorName}`, 20, yPosition + 7);
+    doc.text(`License: ${licenseNumber}`, 20, yPosition + 14);
+    doc.text('Doctor Signature', 20, yPosition + 21);
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.text('This is a computer-generated prescription.', 105, 280, { align: 'center' });
+    doc.text(`Generated on ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
+    
+    // Save the PDF
+    doc.save(`prescription-${prescription.id}.pdf`);
   };
 
   return (

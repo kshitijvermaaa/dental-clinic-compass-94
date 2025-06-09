@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { EnhancedTeethSelector } from './EnhancedTeethSelector';
+import { VisualTeethSelector } from './VisualTeethSelector';
 import { CalendarDays, Clock, User, Phone, FileText, Stethoscope } from 'lucide-react';
 
 interface ToothSelection {
@@ -65,7 +64,7 @@ export const EnhancedAppointmentForm: React.FC<EnhancedAppointmentFormProps> = (
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-blue-600" />
@@ -213,8 +212,8 @@ export const EnhancedAppointmentForm: React.FC<EnhancedAppointmentFormProps> = (
             </div>
           </div>
 
-          {/* Enhanced Teeth Selection */}
-          <EnhancedTeethSelector selectedTeeth={selectedTeeth} onTeethChange={setSelectedTeeth} />
+          {/* Visual Teeth Selection */}
+          <VisualTeethSelector selectedTeeth={selectedTeeth} onTeethChange={setSelectedTeeth} />
 
           {/* Medical Information */}
           <div className="space-y-4">
