@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, RotateCcw } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { X } from 'lucide-react';
 
 interface ToothSelection {
   tooth: string;
@@ -16,321 +18,298 @@ interface VisualTeethSelectorProps {
   onTeethChange: (teeth: ToothSelection[]) => void;
 }
 
-export const VisualTeethSelector: React.FC<VisualTeethSelectorProps> = ({ selectedTeeth, onTeethChange }) => {
-  const [selectedMode, setSelectedMode] = useState('full');
+const toothParts = [
+  { value: 'occlusal', label: 'Occlusal (Chewing Surface)', color: '#ef4444', shortLabel: 'O' },
+  { value: 'mesial', label: 'Mesial (Front Edge)', color: '#3b82f6', shortLabel: 'M' },
+  { value: 'distal', label: 'Distal (Back Edge)', color: '#10b981', shortLabel: 'D' },
+  { value: 'buccal', label: 'Buccal (Cheek Side)', color: '#f59e0b', shortLabel: 'B' },
+  { value: 'lingual', label: 'Lingual (Tongue Side)', color: '#8b5cf6', shortLabel: 'L' },
+  { value: 'cervical', label: 'Cervical (Neck)', color: '#06b6d4', shortLabel: 'C' },
+  { value: 'root', label: 'Root', color: '#84cc16', shortLabel: 'R' },
+  { value: 'full', label: 'Full Tooth', color: '#dc2626', shortLabel: 'F' }
+];
 
-  const toothParts = [
-    { value: 'occlusal', label: 'Occlusal', color: '#ef4444', shortLabel: 'O' },
-    { value: 'mesial', label: 'Mesial', color: '#3b82f6', shortLabel: 'M' },
-    { value: 'distal', label: 'Distal', color: '#10b981', shortLabel: 'D' },
-    { value: 'buccal', label: 'Buccal', color: '#f59e0b', shortLabel: 'B' },
-    { value: 'lingual', label: 'Lingual', color: '#8b5cf6', shortLabel: 'L' },
-    { value: 'full', label: 'Full Tooth', color: '#dc2626', shortLabel: 'F' }
-  ];
+// Generate tooth numbers for each quadrant
+const generateTeethNumbers = () => {
+  const upperRight = Array.from({length: 8}, (_, i) => `1${i + 1}`);
+  const upperLeft = Array.from({length: 8}, (_, i) => `2${i + 1}`);
+  const lowerLeft = Array.from({length: 8}, (_, i) => `3${i + 1}`);
+  const lowerRight = Array.from({length: 8}, (_, i) => `4${i + 1}`);
+  
+  return { upperRight, upperLeft, lowerLeft, lowerRight };
+};
 
-  const upperTeeth = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28'];
-  const lowerTeeth = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38'];
+export const VisualTeethSelector: React.FC<VisualTeethSelectorProps> = ({
+  selectedTeeth,
+  onTeethChange
+}) => {
+  const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
+  const [selectedParts, setSelectedParts] = useState<string[]>([]);
+  const { upperRight, upperLeft, lowerLeft, lowerRight } = generateTeethNumbers();
 
-  const isToothPartSelected = (tooth: string, part: string) => {
-    const selection = selectedTeeth.find(s => s.tooth === tooth);
-    return selection ? selection.parts.includes(part) : false;
+  const isToothSelected = (tooth: string) => {
+    return selectedTeeth.some(t => t.tooth === tooth);
   };
 
-  const toggleToothPart = (tooth: string, part: string) => {
-    const existingSelection = selectedTeeth.find(s => s.tooth === tooth);
-    
-    if (part === 'full') {
-      if (existingSelection?.parts.includes('full')) {
-        // Remove entire tooth selection
-        onTeethChange(selectedTeeth.filter(s => s.tooth !== tooth));
-      } else {
-        // Set as full tooth
-        onTeethChange([
-          ...selectedTeeth.filter(s => s.tooth !== tooth),
-          { tooth, parts: ['full'] }
-        ]);
-      }
-      return;
-    }
-    
-    if (existingSelection) {
-      if (existingSelection.parts.includes('full')) {
-        // Replace full with specific part
-        onTeethChange(selectedTeeth.map(s => 
-          s.tooth === tooth ? { ...s, parts: [part] } : s
-        ));
-      } else if (existingSelection.parts.includes(part)) {
-        // Remove this part
-        const newParts = existingSelection.parts.filter(p => p !== part);
-        if (newParts.length === 0) {
-          onTeethChange(selectedTeeth.filter(s => s.tooth !== tooth));
-        } else {
-          onTeethChange(selectedTeeth.map(s => 
-            s.tooth === tooth ? { ...s, parts: newParts } : s
-          ));
-        }
-      } else {
-        // Add this part
-        onTeethChange(selectedTeeth.map(s => 
-          s.tooth === tooth ? { ...s, parts: [...s.parts, part] } : s
-        ));
-      }
+  const getToothParts = (tooth: string) => {
+    const toothData = selectedTeeth.find(t => t.tooth === tooth);
+    return toothData ? toothData.parts : [];
+  };
+
+  const handleToothClick = (tooth: string) => {
+    setSelectedTooth(tooth);
+    const currentParts = getToothParts(tooth);
+    setSelectedParts(currentParts);
+  };
+
+  const handlePartSelection = (part: string, checked: boolean) => {
+    if (checked) {
+      setSelectedParts([...selectedParts, part]);
     } else {
-      // New tooth selection
-      onTeethChange([...selectedTeeth, { tooth, parts: [part] }]);
+      setSelectedParts(selectedParts.filter(p => p !== part));
     }
   };
 
-  const clearSelection = () => {
-    onTeethChange([]);
+  const applySelection = () => {
+    if (!selectedTooth) return;
+    
+    const updatedTeeth = selectedTeeth.filter(t => t.tooth !== selectedTooth);
+    
+    if (selectedParts.length > 0) {
+      updatedTeeth.push({
+        tooth: selectedTooth,
+        parts: selectedParts
+      });
+    }
+    
+    onTeethChange(updatedTeeth);
+    setSelectedTooth(null);
+    setSelectedParts([]);
   };
 
-  const ToothSVG = ({ toothNumber, isUpper }: { toothNumber: string; isUpper: boolean }) => {
-    const getPartColor = (part: string) => {
-      if (isToothPartSelected(toothNumber, part)) {
-        return toothParts.find(p => p.value === part)?.color || '#dc2626';
-      }
-      return isToothPartSelected(toothNumber, 'full') ? '#dc2626' : '#f8fafc';
-    };
+  const removeToothSelection = (tooth: string) => {
+    const updatedTeeth = selectedTeeth.filter(t => t.tooth !== tooth);
+    onTeethChange(updatedTeeth);
+  };
 
-    const isSelected = selectedTeeth.some(s => s.tooth === toothNumber);
+  const clearAllSelections = () => {
+    onTeethChange([]);
+    setSelectedTooth(null);
+    setSelectedParts([]);
+  };
 
+  const ToothButton = ({ tooth, quadrantClass }: { tooth: string; quadrantClass: string }) => {
+    const isSelected = isToothSelected(tooth);
+    const parts = getToothParts(tooth);
+    const isCurrentlySelected = selectedTooth === tooth;
+    
     return (
-      <div className="relative group">
-        <div className={`transition-all duration-200 ${isSelected ? 'scale-110' : 'hover:scale-105'}`}>
-          <svg 
-            width="48" 
-            height="60" 
-            viewBox="0 0 48 60" 
-            className={`rounded-lg transition-all duration-200 ${
-              isSelected 
-                ? 'shadow-lg ring-2 ring-blue-500/50' 
-                : 'shadow-sm hover:shadow-md border border-slate-200'
-            }`}
-          >
-            {/* Background */}
-            <rect x="0" y="0" width="48" height="60" rx="8" fill="white" />
-            
-            {/* Tooth shape - more realistic */}
-            <path
-              d="M 8 12 Q 8 8 12 8 L 36 8 Q 40 8 40 12 L 40 32 Q 40 48 24 48 Q 8 48 8 32 Z"
-              fill="#ffffff"
-              stroke="#e2e8f0"
-              strokeWidth="1"
-            />
-            
-            {/* Occlusal (Top) */}
-            <path
-              d="M 12 8 Q 16 6 24 6 Q 32 6 36 8 L 32 14 Q 24 12 16 14 Z"
-              fill={getPartColor('occlusal')}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleToothPart(toothNumber, 'occlusal');
-              }}
-            />
-            
-            {/* Mesial (Left/Front) */}
-            <path
-              d="M 8 12 Q 8 8 12 8 L 16 14 L 12 32 Q 8 28 8 24 Z"
-              fill={getPartColor('mesial')}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleToothPart(toothNumber, 'mesial');
-              }}
-            />
-            
-            {/* Distal (Right/Back) */}
-            <path
-              d="M 36 8 Q 40 8 40 12 L 40 24 Q 40 28 36 32 L 32 14 Z"
-              fill={getPartColor('distal')}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleToothPart(toothNumber, 'distal');
-              }}
-            />
-            
-            {/* Buccal (Cheek side - center left) */}
-            <path
-              d="M 16 14 L 12 32 Q 16 36 20 32 L 20 18 Z"
-              fill={getPartColor('buccal')}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleToothPart(toothNumber, 'buccal');
-              }}
-            />
-            
-            {/* Lingual (Tongue side - center right) */}
-            <path
-              d="M 32 14 L 36 32 Q 32 36 28 32 L 28 18 Z"
-              fill={getPartColor('lingual')}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleToothPart(toothNumber, 'lingual');
-              }}
-            />
-            
-            {/* Center area */}
-            <rect
-              x="20"
-              y="18"
-              width="8"
-              height="14"
-              fill={getPartColor('full')}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleToothPart(toothNumber, 'full');
-              }}
-            />
-            
-            {/* Full tooth overlay when fully selected */}
-            {isToothPartSelected(toothNumber, 'full') && (
-              <path
-                d="M 8 12 Q 8 8 12 8 L 36 8 Q 40 8 40 12 L 40 32 Q 40 48 24 48 Q 8 48 8 32 Z"
-                fill="#dc2626"
-                fillOpacity="0.8"
-                className="cursor-pointer"
-                onClick={() => toggleToothPart(toothNumber, 'full')}
-              />
+      <div className="relative">
+        <Button
+          variant={isCurrentlySelected ? "default" : isSelected ? "secondary" : "outline"}
+          className={`
+            w-12 h-12 text-xs font-bold transition-all duration-200 relative
+            ${isCurrentlySelected ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : ''}
+            ${isSelected && !isCurrentlySelected ? 'bg-green-100 border-green-300 text-green-700' : ''}
+            ${quadrantClass}
+            hover:scale-105
+          `}
+          onClick={() => handleToothClick(tooth)}
+        >
+          {tooth}
+        </Button>
+        {isSelected && parts.length > 0 && (
+          <div className="absolute -top-2 -right-2 flex flex-wrap gap-0.5 max-w-[50px]">
+            {parts.slice(0, 3).map((part, index) => (
+              <div
+                key={index}
+                className="w-3 h-3 rounded-full text-[8px] font-bold text-white flex items-center justify-center"
+                style={{ backgroundColor: toothParts.find(p => p.value === part)?.color }}
+                title={toothParts.find(p => p.value === part)?.label}
+              >
+                {toothParts.find(p => p.value === part)?.shortLabel}
+              </div>
+            ))}
+            {parts.length > 3 && (
+              <div className="w-3 h-3 rounded-full bg-slate-400 text-[8px] font-bold text-white flex items-center justify-center">
+                +
+              </div>
             )}
-          </svg>
-          
-          {/* Tooth number */}
-          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-slate-900 text-white px-2 py-0.5 rounded-full min-w-[24px] text-center">
-            {toothNumber}
           </div>
-          
-          {/* Selection indicator */}
-          {isSelected && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-            </div>
-          )}
-        </div>
-        
-        {/* Hover tooltip */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-          Tooth {toothNumber}
-        </div>
+        )}
       </div>
     );
   };
 
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-blue-50">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold text-slate-900">
-            Visual Teeth Selector
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={clearSelection} className="flex items-center gap-2">
-              <RotateCcw className="w-4 h-4" />
+    <Card className="border-2 border-blue-200">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Visual Teeth Selector</span>
+          {selectedTeeth.length > 0 && (
+            <Button variant="outline" size="sm" onClick={clearAllSelections}>
               Clear All
             </Button>
-          </div>
-        </div>
+          )}
+        </CardTitle>
       </CardHeader>
-      
       <CardContent className="space-y-6">
-        {/* Legend */}
-        <div className="space-y-3">
-          <h5 className="text-sm font-medium text-slate-700">Tooth Parts Guide:</h5>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {toothParts.map((part) => (
-              <div key={part.value} className="flex items-center gap-2 p-2 rounded-lg bg-white/60 border border-slate-200">
-                <div 
-                  className="w-4 h-4 rounded-full border border-slate-300" 
-                  style={{ backgroundColor: part.color }}
-                />
-                <span className="text-sm font-medium">{part.label}</span>
+        {/* Teeth Grid */}
+        <div className="space-y-6">
+          {/* Upper Teeth */}
+          <div className="space-y-3">
+            <div className="text-sm font-medium text-center text-slate-600">Upper Teeth</div>
+            <div className="flex justify-center">
+              <div className="grid grid-cols-16 gap-1">
+                {/* Upper Right */}
+                {upperRight.reverse().map(tooth => (
+                  <ToothButton key={tooth} tooth={tooth} quadrantClass="rounded-tl-lg" />
+                ))}
+                {/* Upper Left */}
+                {upperLeft.map(tooth => (
+                  <ToothButton key={tooth} tooth={tooth} quadrantClass="rounded-tr-lg" />
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-          <p className="text-xs text-slate-600 bg-blue-50 p-2 rounded-lg">
-            💡 Click on different parts of each tooth to select specific areas, or click the center for the full tooth.
-          </p>
-        </div>
-        
-        <Separator />
-        
-        {/* Upper Teeth */}
-        <div className="space-y-4">
-          <h5 className="text-sm font-medium text-slate-700 flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            Upper Teeth (Maxilla)
-          </h5>
-          <div className="flex gap-2 flex-wrap justify-center p-4 bg-white/60 rounded-xl border border-slate-200">
-            {upperTeeth.map((tooth) => (
-              <ToothSVG key={tooth} toothNumber={tooth} isUpper={true} />
-            ))}
+
+          {/* Lower Teeth */}
+          <div className="space-y-3">
+            <div className="text-sm font-medium text-center text-slate-600">Lower Teeth</div>
+            <div className="flex justify-center">
+              <div className="grid grid-cols-16 gap-1">
+                {/* Lower Right */}
+                {lowerRight.reverse().map(tooth => (
+                  <ToothButton key={tooth} tooth={tooth} quadrantClass="rounded-bl-lg" />
+                ))}
+                {/* Lower Left */}
+                {lowerLeft.map(tooth => (
+                  <ToothButton key={tooth} tooth={tooth} quadrantClass="rounded-br-lg" />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Lower Teeth */}
-        <div className="space-y-4">
-          <h5 className="text-sm font-medium text-slate-700 flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            Lower Teeth (Mandible)
-          </h5>
-          <div className="flex gap-2 flex-wrap justify-center p-4 bg-white/60 rounded-xl border border-slate-200">
-            {lowerTeeth.map((tooth) => (
-              <ToothSVG key={tooth} toothNumber={tooth} isUpper={false} />
-            ))}
-          </div>
-        </div>
+        {/* Part Selection Panel */}
+        {selectedTooth && (
+          <Card className="border-2 border-orange-200 bg-orange-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
+                Select Parts for Tooth {selectedTooth}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {toothParts.map(part => (
+                  <div key={part.value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`part-${part.value}`}
+                      checked={selectedParts.includes(part.value)}
+                      onCheckedChange={(checked) => handlePartSelection(part.value, checked as boolean)}
+                    />
+                    <Label 
+                      htmlFor={`part-${part.value}`} 
+                      className="text-sm cursor-pointer flex items-center gap-2"
+                    >
+                      <div 
+                        className="w-4 h-4 rounded-full text-white text-xs font-bold flex items-center justify-center"
+                        style={{ backgroundColor: part.color }}
+                      >
+                        {part.shortLabel}
+                      </div>
+                      {part.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-3">
+                <Button onClick={applySelection} className="bg-green-600 hover:bg-green-700">
+                  Apply Selection
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedTooth(null);
+                    setSelectedParts([]);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Selected Teeth Summary */}
         {selectedTeeth.length > 0 && (
-          <>
-            <Separator />
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h5 className="text-sm font-medium text-slate-700">Selected Teeth Summary:</h5>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                  {selectedTeeth.length} {selectedTeeth.length === 1 ? 'tooth' : 'teeth'}
-                </Badge>
-              </div>
-              <div className="grid gap-2">
-                {selectedTeeth.map((selection, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
+          <Card className="bg-green-50 border-green-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg text-green-800">
+                Selected Teeth ({selectedTeeth.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {selectedTeeth.map((toothData, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-bold text-blue-700">{selection.tooth}</span>
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center border border-green-300">
+                        <span className="font-bold text-green-700">{toothData.tooth}</span>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {selection.parts.map((part, partIndex) => (
-                          <Badge 
-                            key={partIndex} 
-                            className="text-xs text-white border-0"
-                            style={{ 
-                              backgroundColor: toothParts.find(p => p.value === part)?.color || '#dc2626' 
-                            }}
-                          >
-                            {toothParts.find(p => p.value === part)?.shortLabel || part}
-                          </Badge>
-                        ))}
+                      <div className="space-y-1">
+                        <div className="font-medium text-green-800">Tooth {toothData.tooth}</div>
+                        <div className="flex gap-1 flex-wrap">
+                          {toothData.parts.map((part, partIndex) => (
+                            <Badge 
+                              key={partIndex} 
+                              className="text-xs text-white border-0"
+                              style={{ 
+                                backgroundColor: toothParts.find(p => p.value === part)?.color 
+                              }}
+                            >
+                              {toothParts.find(p => p.value === part)?.shortLabel} - {toothParts.find(p => p.value === part)?.label}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onTeethChange(selectedTeeth.filter((_, i) => i !== index))}
-                      className="text-slate-400 hover:text-red-500 p-1 h-auto"
+                      onClick={() => removeToothSelection(toothData.tooth)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
                 ))}
               </div>
-            </div>
-          </>
+            </CardContent>
+          </Card>
         )}
+
+        {/* Legend */}
+        <Card className="bg-slate-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Part Color Legend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {toothParts.map(part => (
+                <div key={part.value} className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded-full text-white text-xs font-bold flex items-center justify-center"
+                    style={{ backgroundColor: part.color }}
+                  >
+                    {part.shortLabel}
+                  </div>
+                  <span className="text-xs text-slate-600">{part.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );

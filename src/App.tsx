@@ -1,47 +1,51 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Layout } from './components/Layout';
-import Index from './pages/Index';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { ThemeProvider } from './components/theme-provider';
+import { SettingsContext } from './contexts/SettingsContext';
+import Index from './pages';
 import Dashboard from './pages/Dashboard';
-import Appointments from './pages/Appointments';
 import PatientSearch from './pages/PatientSearch';
-import Prescriptions from './pages/Prescriptions';
+import Appointments from './pages/Appointments';
 import RegisterPatient from './pages/RegisterPatient';
+import Prescriptions from './pages/Prescriptions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
-import { Toaster } from '@/components/ui/toaster';
 import PatientRecord from './pages/PatientRecord';
-import { SettingsProvider } from './contexts/SettingsContext';
 import TreatmentFlow from './pages/TreatmentFlow';
-
-const queryClient = new QueryClient();
+import PatientTreatment from './pages/PatientTreatment';
 
 function App() {
+  const [clinicName, setClinicName] = useState('My Clinic');
+  const location = useLocation();
+  const [showToaster, setShowToaster] = useState(true);
+
+  useEffect(() => {
+    // Conditionally show the Toaster based on the current route
+    setShowToaster(location.pathname !== '/patient-record');
+  }, [location.pathname]);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <SettingsProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Index />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="appointments" element={<Appointments />} />
-              <Route path="search" element={<PatientSearch />} />
-              <Route path="patient-record" element={<PatientRecord />} />
-              <Route path="treatment-flow" element={<TreatmentFlow />} />
-              <Route path="prescriptions" element={<Prescriptions />} />
-              <Route path="register" element={<RegisterPatient />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-          <Toaster />
-        </Router>
-      </SettingsProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="system" storageKey="vite-react-theme">
+      <SettingsContext.Provider value={{ clinicName, setClinicName }}>
+        {showToaster && <Toaster position="top-center" richColors />}
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/search" element={<PatientSearch />} />
+          <Route path="/appointments" element={<Appointments />} />
+          <Route path="/register" element={<RegisterPatient />} />
+          <Route path="/prescriptions" element={<Prescriptions />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/patient-record" element={<PatientRecord />} />
+          <Route path="/treatment-flow" element={<TreatmentFlow />} />
+          <Route path="/patient-treatment" element={<PatientTreatment />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </SettingsContext.Provider>
+    </ThemeProvider>
   );
 }
 
