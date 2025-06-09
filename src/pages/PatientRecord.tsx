@@ -141,7 +141,7 @@ const toothParts = [
 const PatientRecord = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { settings } = useSettings();
+  const { clinicName } = useSettings();
   const patientId = searchParams.get('patient');
   
   if (!patientId) {
@@ -360,7 +360,7 @@ const PatientRecord = () => {
             dateOfBirth: patient.dateOfBirth || '1990-01-01',
             emergencyContact: patient.emergencyContact
           }}
-          clinicName={settings.clinicName}
+          clinicName={clinicName}
         />
 
         {/* Detailed Records */}
