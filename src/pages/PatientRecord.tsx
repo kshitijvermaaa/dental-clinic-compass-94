@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +10,7 @@ import {
   Pill, ArrowLeft, Download, Edit, Plus, Eye
 } from 'lucide-react';
 
-// Mock patient data - in a real app, this would come from a database
+// Mock patient data - enhanced with teeth treatment data
 const getPatientRecord = (patientId: string) => {
   const records: Record<string, any> = {
     'P001': {
@@ -37,8 +36,25 @@ const getPatientRecord = (patientId: string) => {
         { id: 'RX001', date: '2024-06-01', diagnosis: 'Dental Infection', medicines: ['Amoxicillin 500mg', 'Ibuprofen 400mg'] }
       ],
       treatments: [
-        { id: 'T001', date: '2024-06-01', type: 'Cleaning', teeth: ['16', '17'], notes: 'Routine cleaning completed' },
-        { id: 'T002', date: '2024-05-15', type: 'Filling', teeth: ['26'], notes: 'Composite filling placed' }
+        { 
+          id: 'T001', 
+          date: '2024-06-01', 
+          type: 'Cleaning', 
+          teeth: [
+            { tooth: '16', parts: ['occlusal', 'buccal'] },
+            { tooth: '17', parts: ['full'] }
+          ], 
+          notes: 'Routine cleaning completed' 
+        },
+        { 
+          id: 'T002', 
+          date: '2024-05-15', 
+          type: 'Filling', 
+          teeth: [
+            { tooth: '26', parts: ['occlusal'] }
+          ], 
+          notes: 'Composite filling placed on occlusal surface' 
+        }
       ]
     },
     'P024': {
@@ -63,7 +79,15 @@ const getPatientRecord = (patientId: string) => {
         { id: 'RX002', date: '2024-06-07', diagnosis: 'Root Canal Treatment', medicines: ['Metronidazole 400mg', 'Paracetamol 650mg'] }
       ],
       treatments: [
-        { id: 'T003', date: '2024-06-07', type: 'Root Canal', teeth: ['36'], notes: 'Root canal treatment completed' }
+        { 
+          id: 'T003', 
+          date: '2024-06-07', 
+          type: 'Root Canal', 
+          teeth: [
+            { tooth: '36', parts: ['root', 'cervical'] }
+          ], 
+          notes: 'Root canal treatment completed' 
+        }
       ]
     },
     'P035': {
@@ -88,12 +112,29 @@ const getPatientRecord = (patientId: string) => {
         { id: 'RX003', date: '2024-06-06', diagnosis: 'Gingivitis', medicines: ['Chlorhexidine Mouthwash'] }
       ],
       treatments: [
-        { id: 'T004', date: '2024-06-06', type: 'Cleaning', teeth: [], notes: 'Scaling and polishing completed' }
+        { 
+          id: 'T004', 
+          date: '2024-06-06', 
+          type: 'Cleaning', 
+          teeth: [], 
+          notes: 'Scaling and polishing completed' 
+        }
       ]
     }
   };
   return records[patientId] || null;
 };
+
+const toothParts = [
+  { value: 'occlusal', label: 'Occlusal (Top)' },
+  { value: 'mesial', label: 'Mesial (Front)' },
+  { value: 'distal', label: 'Distal (Back)' },
+  { value: 'buccal', label: 'Buccal (Cheek side)' },
+  { value: 'lingual', label: 'Lingual (Tongue side)' },
+  { value: 'cervical', label: 'Cervical (Neck)' },
+  { value: 'root', label: 'Root' },
+  { value: 'full', label: 'Full Tooth' }
+];
 
 const PatientRecord = () => {
   const [searchParams] = useSearchParams();
@@ -293,17 +334,32 @@ const PatientRecord = () => {
               </TabsContent>
               
               <TabsContent value="treatments" className="p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Treatment History</h3>
+                <h3 className="text-lg font-semibold">Treatment History with Teeth Details</h3>
                 {patient.treatments.map((treatment: any) => (
-                  <div key={treatment.id} className="p-4 rounded-lg border border-slate-100 space-y-2">
+                  <div key={treatment.id} className="p-4 rounded-lg border border-slate-100 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="font-medium">{treatment.type}</div>
                       <div className="text-sm text-slate-600">{treatment.date}</div>
                     </div>
                     {treatment.teeth.length > 0 && (
-                      <div className="text-sm text-slate-600">
-                        <span className="font-medium">Teeth: </span>
-                        {treatment.teeth.join(', ')}
+                      <div className="space-y-2">
+                        <h5 className="text-sm font-medium text-slate-700">Affected Teeth & Parts:</h5>
+                        <div className="space-y-2">
+                          {treatment.teeth.map((toothData: any, index: number) => (
+                            <div key={index} className="flex items-center gap-2 p-2 bg-slate-50 rounded border">
+                              <Badge variant="default" className="text-xs">
+                                Tooth {toothData.tooth}
+                              </Badge>
+                              <div className="flex gap-1 flex-wrap">
+                                {toothData.parts.map((part: string, partIndex: number) => (
+                                  <Badge key={partIndex} variant="secondary" className="text-xs">
+                                    {toothParts.find(p => p.value === part)?.label || part}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     <div className="text-sm text-slate-600">{treatment.notes}</div>

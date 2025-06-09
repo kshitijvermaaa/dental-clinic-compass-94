@@ -14,29 +14,32 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import { Toaster } from '@/components/ui/toaster';
 import PatientRecord from './pages/PatientRecord';
+import { SettingsProvider } from './contexts/SettingsContext';
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Index />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="appointments" element={<Appointments />} />
-            <Route path="search" element={<PatientSearch />} />
-            <Route path="patient-record" element={<PatientRecord />} />
-            <Route path="prescriptions" element={<Prescriptions />} />
-            <Route path="register" element={<RegisterPatient />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-        <Toaster />
-      </Router>
+      <SettingsProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Index />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="appointments" element={<Appointments />} />
+              <Route path="search" element={<PatientSearch />} />
+              <Route path="patient-record" element={<PatientRecord />} />
+              <Route path="prescriptions" element={<Prescriptions />} />
+              <Route path="register" element={<RegisterPatient />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+          <Toaster />
+        </Router>
+      </SettingsProvider>
     </QueryClientProvider>
   );
 }

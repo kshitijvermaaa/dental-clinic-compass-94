@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Search, Plus, Eye, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PrescriptionForm } from '@/components/prescriptions/PrescriptionForm';
+import { PrescriptionViewer } from '@/components/prescriptions/PrescriptionViewer';
 
 const prescriptionsData = [
   {
@@ -42,6 +43,8 @@ const Prescriptions = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
+  const [selectedPrescription, setSelectedPrescription] = useState<any>(null);
+  const [showPrescriptionViewer, setShowPrescriptionViewer] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -59,6 +62,47 @@ const Prescriptions = () => {
     prescription.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
     prescription.diagnosis.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleViewPrescription = (prescription: any) => {
+    setSelectedPrescription(prescription);
+    setShowPrescriptionViewer(true);
+  };
+
+  const handleDownloadPrescription = (prescription: any) => {
+    // Direct download functionality
+    const content = `
+DENTAL PRESCRIPTION
+
+Clinic: DentalCare Pro Clinic
+Date: ${prescription.date}
+Prescription ID: ${prescription.id}
+
+Patient Information:
+Name: ${prescription.patientName}
+Patient ID: ${prescription.patientId}
+
+Diagnosis: ${prescription.diagnosis}
+
+Prescribed Medications:
+${prescription.medicines.map((med: string, index: number) => `${index + 1}. ${med}`).join('\n')}
+
+Doctor: Dr. Smith
+License: DL12345
+
+---
+This is a computer-generated prescription.
+    `;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prescription-${prescription.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -144,6 +188,7 @@ const Prescriptions = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={() => handleViewPrescription(prescription)}
                       title="View Prescription Details"
                     >
                       <Eye className="w-4 h-4" />
@@ -151,6 +196,7 @@ const Prescriptions = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={() => handleDownloadPrescription(prescription)}
                       title="Download Prescription"
                     >
                       <Download className="w-4 h-4" />
@@ -167,6 +213,13 @@ const Prescriptions = () => {
       <PrescriptionForm 
         open={showPrescriptionForm} 
         onOpenChange={setShowPrescriptionForm} 
+      />
+
+      {/* Prescription Viewer Dialog */}
+      <PrescriptionViewer
+        open={showPrescriptionViewer}
+        onOpenChange={setShowPrescriptionViewer}
+        prescription={selectedPrescription}
       />
     </div>
   );

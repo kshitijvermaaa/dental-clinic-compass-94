@@ -8,8 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { TeethSelector } from './TeethSelector';
+import { EnhancedTeethSelector } from './EnhancedTeethSelector';
 import { CalendarDays, Clock, User, Phone, FileText, Stethoscope } from 'lucide-react';
+
+interface ToothSelection {
+  tooth: string;
+  parts: string[];
+}
 
 interface EnhancedAppointmentFormProps {
   open: boolean;
@@ -18,7 +23,7 @@ interface EnhancedAppointmentFormProps {
 
 export const EnhancedAppointmentForm: React.FC<EnhancedAppointmentFormProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
-  const [selectedTeeth, setSelectedTeeth] = useState<string[]>([]);
+  const [selectedTeeth, setSelectedTeeth] = useState<ToothSelection[]>([]);
   const [formData, setFormData] = useState({
     patientName: '',
     patientId: '',
@@ -208,8 +213,8 @@ export const EnhancedAppointmentForm: React.FC<EnhancedAppointmentFormProps> = (
             </div>
           </div>
 
-          {/* Teeth Selection */}
-          <TeethSelector selectedTeeth={selectedTeeth} onTeethChange={setSelectedTeeth} />
+          {/* Enhanced Teeth Selection */}
+          <EnhancedTeethSelector selectedTeeth={selectedTeeth} onTeethChange={setSelectedTeeth} />
 
           {/* Medical Information */}
           <div className="space-y-4">
