@@ -1,8 +1,7 @@
-
-import React, { ReactNode } from 'react';
+import React from 'react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Home, UserPlus, Search, Calendar, FileText, Settings, Activity } from 'lucide-react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, Outlet } from 'react-router-dom';
 
 const navigationItems = [
   {
@@ -109,11 +108,7 @@ const AppSidebar = () => {
   );
 };
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout: React.FC = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-slate-50">
@@ -123,7 +118,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <SidebarTrigger className="hover:bg-slate-100 hover:scale-105 transition-all duration-200" />
           </div>
           <div className="overflow-auto h-[calc(100vh-73px)]">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

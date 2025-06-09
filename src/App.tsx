@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { QueryClient } from 'react-query';
-import Layout from './components/layout/Layout';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Layout } from './components/Layout';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
 import Appointments from './pages/Appointments';
@@ -14,9 +15,11 @@ import NotFound from './pages/NotFound';
 import { Toaster } from '@/components/ui/toaster';
 import PatientRecord from './pages/PatientRecord';
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <QueryClient>
+    <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -34,7 +37,7 @@ function App() {
         </Routes>
         <Toaster />
       </Router>
-    </QueryClient>
+    </QueryClientProvider>
   );
 }
 
