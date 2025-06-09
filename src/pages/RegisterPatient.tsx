@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,9 +32,15 @@ const RegisterPatient = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Patient registration data:', formData);
+    const patientId = 'P' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     toast('Patient registered successfully!', {
-      description: 'Patient ID: P' + Math.floor(Math.random() * 1000).toString().padStart(3, '0'),
+      description: `Patient ID: ${patientId} - Redirecting to treatment management...`,
     });
+    
+    // Redirect to treatment flow for the new patient
+    setTimeout(() => {
+      window.location.href = `/treatment-flow?patient=${patientId}&new=true`;
+    }, 2000);
   };
 
   return (

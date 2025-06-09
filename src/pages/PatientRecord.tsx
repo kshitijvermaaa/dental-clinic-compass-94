@@ -9,6 +9,8 @@ import {
   User, Phone, Mail, Calendar, Clock, FileText, Stethoscope, 
   Pill, ArrowLeft, Download, Edit, Plus, Eye, Heart, AlertTriangle
 } from 'lucide-react';
+import { PatientCard } from '@/components/patients/PatientCard';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // Mock patient data - enhanced with teeth treatment data
 const getPatientRecord = (patientId: string) => {
@@ -139,6 +141,7 @@ const toothParts = [
 const PatientRecord = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const patientId = searchParams.get('patient');
   
   if (!patientId) {
@@ -254,6 +257,14 @@ const PatientRecord = () => {
             </div>
           </div>
           <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(`/treatment-flow?patient=${patientId}`)}
+              className="border-green-300 hover:bg-green-50 text-green-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Treatment
+            </Button>
             <Button variant="outline" title="Download Records" className="border-slate-300 hover:bg-slate-50">
               <Download className="w-4 h-4 mr-2" />
               Download
@@ -334,6 +345,23 @@ const PatientRecord = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Patient ID Card */}
+        <PatientCard 
+          patient={{
+            id: patient.id,
+            name: patient.name,
+            phone: patient.phone,
+            email: patient.email,
+            age: patient.age,
+            gender: patient.gender,
+            bloodGroup: patient.bloodGroup,
+            address: patient.address,
+            dateOfBirth: patient.dateOfBirth || '1990-01-01',
+            emergencyContact: patient.emergencyContact
+          }}
+          clinicName={settings.clinicName}
+        />
 
         {/* Detailed Records */}
         <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
