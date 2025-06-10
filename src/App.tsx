@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from './components/theme-provider';
-import { SettingsContext } from './contexts/SettingsContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import Index from './pages';
 import Dashboard from './pages/Dashboard';
 import PatientSearch from './pages/PatientSearch';
@@ -17,7 +18,6 @@ import TreatmentFlow from './pages/TreatmentFlow';
 import PatientTreatment from './pages/PatientTreatment';
 
 function App() {
-  const [clinicName, setClinicName] = useState('My Clinic');
   const location = useLocation();
   const [showToaster, setShowToaster] = useState(true);
 
@@ -28,7 +28,7 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-react-theme">
-      <SettingsContext.Provider value={{ clinicName, setClinicName }}>
+      <SettingsProvider>
         {showToaster && <Toaster position="top-center" richColors />}
         <Routes>
           <Route path="/" element={<Index />} />
@@ -44,7 +44,7 @@ function App() {
           <Route path="/patient-treatment" element={<PatientTreatment />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </SettingsContext.Provider>
+      </SettingsProvider>
     </ThemeProvider>
   );
 }
