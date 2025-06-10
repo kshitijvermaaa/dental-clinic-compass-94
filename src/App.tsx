@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from './components/theme-provider';
 import { SettingsProvider } from './contexts/SettingsContext';
-import Index from './pages';
+import Index from './pages/index';
 import Dashboard from './pages/Dashboard';
 import PatientSearch from './pages/PatientSearch';
 import Appointments from './pages/Appointments';
