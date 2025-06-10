@@ -10,7 +10,7 @@ interface SettingsContextType {
   setLicenseNumber: (license: string) => void;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const useSettings = () => {
   const context = useContext(SettingsContext);

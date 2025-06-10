@@ -28,10 +28,12 @@ interface ToothSelection {
   parts: string[];
 }
 
+type VisitType = 'scheduled' | 'emergency' | 'first-visit';
+
 interface PatientTreatmentSessionProps {
   patientId: string;
   patientName: string;
-  visitType?: 'scheduled' | 'emergency' | 'first-visit';
+  visitType?: VisitType;
 }
 
 export const PatientTreatmentSession: React.FC<PatientTreatmentSessionProps> = ({
@@ -162,7 +164,7 @@ export const PatientTreatmentSession: React.FC<PatientTreatmentSessionProps> = (
               <Label htmlFor="visit-type">Visit Type</Label>
               <Select 
                 value={sessionData.visitType} 
-                onValueChange={(value) => setSessionData({...sessionData, visitType: value})}
+                onValueChange={(value: VisitType) => setSessionData({...sessionData, visitType: value})}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -304,7 +306,7 @@ export const PatientTreatmentSession: React.FC<PatientTreatmentSessionProps> = (
               <Checkbox 
                 id="follow-up" 
                 checked={sessionData.followUpRequired}
-                onCheckedChange={(checked) => setSessionData({...sessionData, followUpRequired: checked})}
+                onCheckedChange={(checked: boolean) => setSessionData({...sessionData, followUpRequired: checked})}
               />
               <Label htmlFor="follow-up" className="flex items-center gap-2">
                 <CalendarPlus className="w-4 h-4 text-orange-600" />
