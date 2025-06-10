@@ -8,6 +8,11 @@ interface SettingsContextType {
   setDoctorName: (name: string) => void;
   licenseNumber: string;
   setLicenseNumber: (license: string) => void;
+  settings: {
+    clinicName: string;
+    doctorName: string;
+    licenseNumber: string;
+  };
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -29,6 +34,12 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const [doctorName, setDoctorName] = useState('Dr. Smith');
   const [licenseNumber, setLicenseNumber] = useState('DL12345');
 
+  const settings = {
+    clinicName,
+    doctorName,
+    licenseNumber
+  };
+
   return (
     <SettingsContext.Provider value={{
       clinicName,
@@ -36,7 +47,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       doctorName,
       setDoctorName,
       licenseNumber,
-      setLicenseNumber
+      setLicenseNumber,
+      settings
     }}>
       {children}
     </SettingsContext.Provider>
