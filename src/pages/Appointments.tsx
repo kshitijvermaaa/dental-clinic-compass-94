@@ -1,13 +1,16 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Plus, Search, User, Phone, FileText, Eye } from 'lucide-react';
+import { Calendar, Clock, Plus, Search, User, Phone, FileText, Eye, CalendarX, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedAppointmentForm } from '@/components/appointments/EnhancedAppointmentForm';
 import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
+import { RescheduleAppointment } from '@/components/appointments/RescheduleAppointment';
+import { HolidayCalendar } from '@/components/calendar/HolidayCalendar';
+import { ClinicClosureManager } from '@/components/appointments/ClinicClosureManager';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const appointmentsData = [
   {
@@ -48,6 +51,8 @@ const Appointments = () => {
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [showPatientDetails, setShowPatientDetails] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -78,6 +83,23 @@ const Appointments = () => {
     setSearchTerm(e.target.value);
   };
 
+  const handleReschedule = (appointment: any) => {
+    setSelectedAppointment({
+      id: appointment.id,
+      patientName: appointment.patientName,
+      patientId: appointment.patientId,
+      currentDate: new Date(),
+      currentTime: appointment.time,
+      reason: appointment.reason
+    });
+    setShowReschedule(true);
+  };
+
+  const handleRescheduleConfirm = (appointmentId: string, newDate: Date, newTime: string) => {
+    console.log('Rescheduling appointment:', appointmentId, 'to', newDate, newTime);
+    // Here you would update the appointment in your data store
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -85,9 +107,9 @@ const Appointments = () => {
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-              Appointments
+              Appointments Management
             </h1>
-            <p className="text-slate-600">Manage patient appointments and schedules</p>
+            <p className="text-slate-600">Manage appointments, holidays, and clinic operations</p>
           </div>
           <div className="flex gap-3">
             <div className="relative">
@@ -110,98 +132,145 @@ const Appointments = () => {
           </div>
         </div>
 
-        {/* Today's Date */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-600" />
-              Today's Schedule - {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </CardTitle>
-            <CardDescription>
-              {filteredAppointments.length} appointments {searchTerm ? 'found' : 'scheduled'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {filteredAppointments.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>{searchTerm ? 'No appointments found matching your search.' : 'No appointments scheduled for today.'}</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setShowAppointmentForm(true)}
-                >
-                  Schedule New Appointment
-                </Button>
-              </div>
-            ) : (
-              filteredAppointments.map((appointment) => (
-                <div
-                  key={appointment.id}
-                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:bg-slate-50/50 transition-all duration-300 group"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
+        <Tabs defaultValue="appointments" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="appointments">Today's Appointments</TabsTrigger>
+            <TabsTrigger value="holidays">Holiday Calendar</TabsTrigger>
+            <TabsTrigger value="closure">Emergency Closure</TabsTrigger>
+            <TabsTrigger value="reschedule">Reschedule</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="appointments" className="space-y-4">
+            {/* Today's Schedule */}
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                  Today's Schedule - {new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </CardTitle>
+                <CardDescription>
+                  {filteredAppointments.length} appointments {searchTerm ? 'found' : 'scheduled'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {filteredAppointments.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                    <p>{searchTerm ? 'No appointments found matching your search.' : 'No appointments scheduled for today.'}</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setShowAppointmentForm(true)}
+                    >
+                      Schedule New Appointment
+                    </Button>
+                  </div>
+                ) : (
+                  filteredAppointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:bg-slate-50/50 transition-all duration-300 group"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <Clock className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold text-slate-900">{appointment.patientName}</span>
+                            <span className="text-sm text-slate-500">({appointment.patientId})</span>
+                            <span className="text-sm font-mono text-slate-600">{appointment.time}</span>
+                          </div>
+                          <div className="mt-1 text-sm text-slate-600">
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-3 h-3" />
+                              {appointment.phone}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              {appointment.reason}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold text-slate-900">{appointment.patientName}</span>
-                        <span className="text-sm text-slate-500">({appointment.patientId})</span>
-                        <span className="text-sm font-mono text-slate-600">{appointment.time}</span>
-                      </div>
-                      <div className="mt-1 text-sm text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-3 h-3" />
-                          {appointment.phone}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          {appointment.reason}
+                        <Badge className={`${getStatusColor(appointment.status)} border font-medium`}>
+                          {appointment.status}
+                        </Badge>
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReschedule(appointment)}
+                            title="Reschedule Appointment"
+                          >
+                            <CalendarX className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewPatient(appointment.patientId)}
+                            title="View Patient Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/patient-record?patient=${appointment.patientId}`)}
+                            title="View Full Patient Record"
+                          >
+                            <User className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate('/prescriptions')}
+                            title="View/Create Prescriptions"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge className={`${getStatusColor(appointment.status)} border font-medium`}>
-                      {appointment.status}
-                    </Badge>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleViewPatient(appointment.patientId)}
-                        title="View Patient Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/patient-record?patient=${appointment.patientId}`)}
-                        title="View Full Patient Record"
-                      >
-                        <User className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate('/prescriptions')}
-                        title="View/Create Prescriptions"
-                      >
-                        <FileText className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="holidays">
+            <HolidayCalendar />
+          </TabsContent>
+
+          <TabsContent value="closure">
+            <ClinicClosureManager />
+          </TabsContent>
+
+          <TabsContent value="reschedule">
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarX className="w-5 h-5 text-blue-600" />
+                  Appointment Rescheduling
+                </CardTitle>
+                <CardDescription>
+                  Reschedule individual appointments or manage bulk changes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-600">
+                  Click the reschedule button next to any appointment in the "Today's Appointments" tab to reschedule it, 
+                  or use the "Emergency Closure" tab to handle multiple appointments at once.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Enhanced Appointment Form Dialog */}
@@ -216,6 +285,16 @@ const Appointments = () => {
         onOpenChange={setShowPatientDetails}
         patientId={selectedPatientId}
       />
+
+      {/* Reschedule Dialog */}
+      {selectedAppointment && (
+        <RescheduleAppointment
+          appointment={selectedAppointment}
+          open={showReschedule}
+          onOpenChange={setShowReschedule}
+          onReschedule={handleRescheduleConfirm}
+        />
+      )}
     </div>
   );
 };
