@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, User, Phone, Calendar, FileText, Download, Eye, Plus } from 'lucide-react';
+import { Search, User, Phone, Calendar, FileText, Download, Eye, Plus, Stethoscope } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -85,6 +84,10 @@ const PatientSearch = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+  };
+
+  const handleNewTreatment = (patientId: string, patientName: string) => {
+    navigate(`/in-patient-treatment?patient=${patientId}&name=${encodeURIComponent(patientName)}&type=appointment`);
   };
 
   return (
@@ -190,6 +193,14 @@ const PatientSearch = () => {
                     </div>
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Button 
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleNewTreatment(patient.id, patient.name)}
+                      title="Start New Treatment"
+                    >
+                      <Stethoscope className="w-4 h-4" />
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm"

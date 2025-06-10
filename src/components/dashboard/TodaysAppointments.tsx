@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, User, Phone, Calendar } from 'lucide-react';
+import { Clock, User, Phone, Calendar, FileText, Stethoscope } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const appointmentsData = [
   {
@@ -44,6 +46,8 @@ const appointmentsData = [
 ];
 
 export const TodaysAppointments: React.FC = () => {
+  const navigate = useNavigate();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled':
@@ -55,6 +59,10 @@ export const TodaysAppointments: React.FC = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleRecordTreatment = (appointment: any) => {
+    navigate(`/in-patient-treatment?patient=${appointment.patientId}&name=${encodeURIComponent(appointment.patientName)}&type=appointment`);
   };
 
   return (
@@ -102,6 +110,17 @@ export const TodaysAppointments: React.FC = () => {
               <Badge className={getStatusColor(appointment.status)}>
                 {appointment.status}
               </Badge>
+              {appointment.status !== 'completed' && (
+                <Button 
+                  size="sm"
+                  onClick={() => handleRecordTreatment(appointment)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  title="Record Treatment"
+                >
+                  <Stethoscope className="w-4 h-4 mr-1" />
+                  Record Treatment
+                </Button>
+              )}
             </div>
           </div>
         ))}

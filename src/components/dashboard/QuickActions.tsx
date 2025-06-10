@@ -2,11 +2,19 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, UserPlus, Calendar, Search, FileText } from 'lucide-react';
+import { Plus, UserPlus, Calendar, Search, FileText, Stethoscope, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const QuickActions: React.FC = () => {
   const navigate = useNavigate();
+
+  const handleWalkInTreatment = () => {
+    navigate('/in-patient-treatment?type=first-visit');
+  };
+
+  const handleEmergencyTreatment = () => {
+    navigate('/in-patient-treatment?type=emergency');
+  };
 
   return (
     <Card className="bg-white border-slate-200">
@@ -24,6 +32,23 @@ export const QuickActions: React.FC = () => {
           <UserPlus className="w-4 h-4" />
           Register New Patient
         </Button>
+        
+        <Button 
+          className="w-full justify-start gap-3 bg-green-600 hover:bg-green-700"
+          onClick={handleWalkInTreatment}
+        >
+          <Stethoscope className="w-4 h-4" />
+          Walk-in Treatment
+        </Button>
+        
+        <Button 
+          className="w-full justify-start gap-3 bg-red-600 hover:bg-red-700"
+          onClick={handleEmergencyTreatment}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Emergency Treatment
+        </Button>
+        
         <Button 
           variant="outline" 
           className="w-full justify-start gap-3"
