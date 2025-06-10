@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -15,6 +16,7 @@ import { Toaster } from '@/components/ui/toaster';
 import PatientRecord from './pages/PatientRecord';
 import { SettingsProvider } from './contexts/SettingsContext';
 import TreatmentFlow from './pages/TreatmentFlow';
+import InPatientTreatmentPage from './pages/InPatientTreatment';
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,7 @@ function App() {
               <Route path="search" element={<PatientSearch />} />
               <Route path="patient-record" element={<PatientRecord />} />
               <Route path="treatment-flow" element={<TreatmentFlow />} />
+              <Route path="in-patient-treatment" element={<InPatientTreatmentPage />} />
               <Route path="prescriptions" element={<Prescriptions />} />
               <Route path="register" element={<RegisterPatient />} />
               <Route path="reports" element={<Reports />} />
