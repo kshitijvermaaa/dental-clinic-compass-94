@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { UserPlus, Upload, Save } from 'lucide-react';
+import { UserPlus, Upload, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +14,7 @@ const RegisterPatient = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     fullName: '',
     gender: '',
@@ -33,6 +33,30 @@ const RegisterPatient = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newFiles = Array.from(files).filter(file => 
+        file.size <= 10 * 1024 * 1024 && // 10MB limit
+        ['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)
+      );
+      
+      if (newFiles.length !== files.length) {
+        toast({
+          title: "File Upload Warning",
+          description: "Some files were skipped. Only PDF, JPG, PNG files under 10MB are allowed.",
+          variant: "destructive",
+        });
+      }
+      
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,7 +106,7 @@ const RegisterPatient = () => {
 
       toast({
         title: "Success",
-        description: `Patient ${formData.fullName} registered successfully!`,
+        description: `Patient ${formData.fullName} registered successfully! Patient ID: ${data.patient_id}`,
       });
 
       // Reset form
@@ -101,10 +125,11 @@ const RegisterPatient = () => {
         chronicConditions: '',
         insuranceDetails: '',
       });
+      setUploadedFiles([]);
 
-      // Redirect to patient search or treatment flow
+      // Navigate using the correct patient_id instead of UUID
       setTimeout(() => {
-        navigate(`/search?patient=${data.id}`);
+        navigate(`/search?patient=${data.patient_id}`);
       }, 1000);
 
     } catch (error) {
@@ -331,17 +356,51 @@ const RegisterPatient = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                    <p className="text-slate-600 mb-2">
-                      Drop files here or click to browse
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Supported formats: PDF, JPG, PNG (Max 10MB)
-                    </p>
-                    <Button variant="outline" className="mt-4" type="button">
-                      Choose Files
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                      <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                      <p className="text-slate-600 mb-2">
+                        Drop files here or click to browse
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Supported formats: PDF, JPG, PNG (Max 10MB)
+                      </p>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="file-upload"
+                      />
+                      <Button 
+                        variant="outline" 
+                        className="mt-4" 
+                        type="button"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        Choose Files
+                      </Button>
+                    </div>
+                    
+                    {uploadedFiles.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Uploaded Files:</Label>
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                            <span className="text-sm">{file.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                              type="button"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { VisualTeethSelector } from '@/components/appointments/VisualTeethSelector';
 import { UserCheck, Stethoscope, FileText, Calendar, Clock, TestTube, AlertTriangle, Save } from 'lucide-react';
 
@@ -31,6 +31,7 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
 }) => {
   const { toast } = useToast();
   const [selectedTeeth, setSelectedTeeth] = useState<ToothSelection[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [treatmentData, setTreatmentData] = useState({
     visitDate: new Date().toISOString().split('T')[0],
     visitTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
@@ -46,47 +47,125 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
     nextAppointmentTime: '',
     nextAppointmentPurpose: '',
     painLevel: '',
-    treatmentStatus: 'in-progress'
+    treatmentStatus: 'ongoing',
+    treatmentCost: '',
+    materialsUsed: ''
   });
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setTreatmentData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveTreatment = () => {
-    const treatmentRecord = {
-      ...treatmentData,
-      patientId,
-      teethTreated: selectedTeeth,
-      createdAt: new Date().toISOString()
-    };
+  const handleSaveTreatment = async () => {
+    if (!patientId) {
+      toast({
+        title: "Error",
+        description: "Patient ID is required to save treatment.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    console.log('Saving treatment record:', treatmentRecord);
+    setIsLoading(true);
     
-    toast({
-      title: "Treatment Record Saved! ✅",
-      description: `Treatment details for ${patientName} have been successfully recorded.`,
-    });
+    try {
+      // Save treatment record
+      const { data: treatmentRecord, error: treatmentError } = await supabase
+        .from('treatments')
+        .insert({
+          patient_id: patientId,
+          treatment_date: treatmentData.visitDate,
+          procedure_done: treatmentData.treatmentPerformed,
+          teeth_involved: selectedTeeth.map(t => `${t.tooth}(${t.parts.join(',')})`),
+          materials_used: treatmentData.materialsUsed,
+          notes: `Chief Complaint: ${treatmentData.chiefComplaint}\n\nClinical Findings: ${treatmentData.clinicalFindings}\n\nDiagnosis: ${treatmentData.diagnosis}\n\nFollow-up Instructions: ${treatmentData.followUpInstructions}`,
+          treatment_cost: treatmentData.treatmentCost ? parseFloat(treatmentData.treatmentCost) : null,
+          treatment_status: treatmentData.treatmentStatus as 'ongoing' | 'completed' | 'cancelled',
+          next_appointment_date: treatmentData.nextAppointmentRequired ? treatmentData.nextAppointmentDate : null
+        })
+        .select()
+        .single();
 
-    // Reset form
-    setTreatmentData({
-      visitDate: new Date().toISOString().split('T')[0],
-      visitTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
-      chiefComplaint: '',
-      clinicalFindings: '',
-      diagnosis: '',
-      treatmentPerformed: '',
-      medicationsPrescribed: '',
-      testsRecommended: '',
-      followUpInstructions: '',
-      nextAppointmentRequired: false,
-      nextAppointmentDate: '',
-      nextAppointmentTime: '',
-      nextAppointmentPurpose: '',
-      painLevel: '',
-      treatmentStatus: 'in-progress'
-    });
-    setSelectedTeeth([]);
+      if (treatmentError) {
+        console.error('Error creating treatment:', treatmentError);
+        throw treatmentError;
+      }
+
+      // Save prescription if medications are prescribed
+      if (treatmentData.medicationsPrescribed.trim()) {
+        const { error: prescriptionError } = await supabase
+          .from('prescriptions')
+          .insert({
+            patient_id: patientId,
+            treatment_id: treatmentRecord.id,
+            medication_name: treatmentData.medicationsPrescribed,
+            dosage: 'As prescribed',
+            frequency: 'As directed',
+            duration: 'As directed',
+            instructions: `Pain Level: ${treatmentData.painLevel}/10\n\nTests Recommended: ${treatmentData.testsRecommended}`,
+            prescribed_date: treatmentData.visitDate
+          });
+
+        if (prescriptionError) {
+          console.error('Error creating prescription:', prescriptionError);
+        }
+      }
+
+      // Create next appointment if required
+      if (treatmentData.nextAppointmentRequired && treatmentData.nextAppointmentDate && treatmentData.nextAppointmentTime) {
+        const { error: appointmentError } = await supabase
+          .from('appointments')
+          .insert({
+            patient_id: patientId,
+            appointment_date: treatmentData.nextAppointmentDate,
+            appointment_time: treatmentData.nextAppointmentTime,
+            appointment_type: treatmentData.nextAppointmentPurpose === 'follow-up' ? 'followup' : 'regular',
+            status: 'scheduled',
+            notes: `Follow-up for: ${treatmentData.treatmentPerformed}`
+          });
+
+        if (appointmentError) {
+          console.error('Error creating appointment:', appointmentError);
+        }
+      }
+
+      toast({
+        title: "Treatment Record Saved! ✅",
+        description: `Treatment details for ${patientName} have been successfully recorded.`,
+      });
+
+      // Reset form
+      setTreatmentData({
+        visitDate: new Date().toISOString().split('T')[0],
+        visitTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
+        chiefComplaint: '',
+        clinicalFindings: '',
+        diagnosis: '',
+        treatmentPerformed: '',
+        medicationsPrescribed: '',
+        testsRecommended: '',
+        followUpInstructions: '',
+        nextAppointmentRequired: false,
+        nextAppointmentDate: '',
+        nextAppointmentTime: '',
+        nextAppointmentPurpose: '',
+        painLevel: '',
+        treatmentStatus: 'ongoing',
+        treatmentCost: '',
+        materialsUsed: ''
+      });
+      setSelectedTeeth([]);
+
+    } catch (error) {
+      console.error('Unexpected error saving treatment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save treatment record. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getVisitTypeInfo = () => {
@@ -131,7 +210,7 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
             Visit Information
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label htmlFor="visit-date">Visit Date</Label>
             <Input
@@ -164,6 +243,16 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="treatment-cost">Treatment Cost (₹)</Label>
+            <Input
+              id="treatment-cost"
+              type="number"
+              value={treatmentData.treatmentCost}
+              onChange={(e) => handleInputChange('treatmentCost', e.target.value)}
+              placeholder="0.00"
+            />
           </div>
         </CardContent>
       </Card>
@@ -233,6 +322,16 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
               value={treatmentData.treatmentPerformed}
               onChange={(e) => handleInputChange('treatmentPerformed', e.target.value)}
               className="min-h-[100px]"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="materials-used">Materials Used</Label>
+            <Textarea
+              id="materials-used"
+              placeholder="List materials and equipment used"
+              value={treatmentData.materialsUsed}
+              onChange={(e) => handleInputChange('materialsUsed', e.target.value)}
+              className="min-h-[60px]"
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -339,9 +438,13 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
 
       {/* Save Button */}
       <div className="flex justify-center pt-4">
-        <Button onClick={handleSaveTreatment} className="bg-blue-600 hover:bg-blue-700 px-8 py-3 text-lg">
+        <Button 
+          onClick={handleSaveTreatment} 
+          className="bg-blue-600 hover:bg-blue-700 px-8 py-3 text-lg"
+          disabled={isLoading}
+        >
           <Save className="w-5 h-5 mr-2" />
-          Save Treatment Record
+          {isLoading ? 'Saving...' : 'Save Treatment Record'}
         </Button>
       </div>
     </div>
