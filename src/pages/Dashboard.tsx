@@ -5,35 +5,57 @@ import { TodaysAppointments } from '@/components/dashboard/TodaysAppointments';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { Calendar, Users, Activity, TrendingUp, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePatients } from '@/hooks/usePatients';
+import { useAppointments } from '@/hooks/useAppointments';
 
 const Dashboard = () => {
+  const { patients, isLoading: patientsLoading } = usePatients();
+  const { appointments, isLoading: appointmentsLoading } = useAppointments();
+
+  // Calculate today's appointments
+  const today = new Date().toISOString().split('T')[0];
+  const todaysAppointments = appointments.filter(apt => apt.appointment_date === today);
+  const completedToday = todaysAppointments.filter(apt => apt.status === 'completed').length;
+  const pendingToday = todaysAppointments.filter(apt => apt.status === 'scheduled').length;
+
+  // Calculate this week's appointments
+  const startOfWeek = new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  const endOfWeek = new Date();
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  
+  const thisWeekAppointments = appointments.filter(apt => {
+    const aptDate = new Date(apt.appointment_date);
+    return aptDate >= startOfWeek && aptDate <= endOfWeek;
+  });
+
   const statsData = [
     {
       title: 'Total Patients',
-      value: '1,234',
+      value: patientsLoading ? '...' : patients.length.toString(),
       icon: Users,
-      trend: '+12% from last month',
+      trend: 'Active patient database',
       trendUp: true,
     },
     {
       title: "Today's Appointments",
-      value: '8',
+      value: appointmentsLoading ? '...' : todaysAppointments.length.toString(),
       icon: Calendar,
-      trend: '2 completed, 6 pending',
+      trend: `${completedToday} completed, ${pendingToday} pending`,
       trendUp: true,
     },
     {
       title: 'This Week',
-      value: '24',
+      value: appointmentsLoading ? '...' : thisWeekAppointments.length.toString(),
       icon: Activity,
-      trend: '+8% from last week',
+      trend: 'Total appointments this week',
       trendUp: true,
     },
     {
-      title: 'Monthly Revenue',
-      value: '₹45,670',
+      title: 'System Status',
+      value: 'Online',
       icon: TrendingUp,
-      trend: '+15% from last month',
+      trend: 'All systems operational',
       trendUp: true,
     },
   ];
@@ -93,55 +115,60 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {[
-                  { action: 'New patient registered', patient: 'John Doe', time: '10 minutes ago' },
-                  { action: 'Appointment completed', patient: 'Sarah Johnson', time: '1 hour ago' },
-                  { action: 'Prescription generated', patient: 'Mike Wilson', time: '2 hours ago' },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+                {patients.slice(0, 3).map((patient, index) => (
+                  <div key={patient.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
                     <div>
-                      <div className="font-medium text-slate-900">{activity.action}</div>
-                      <div className="text-sm text-slate-600">{activity.patient}</div>
+                      <div className="font-medium text-slate-900">New patient registered</div>
+                      <div className="text-sm text-slate-600">{patient.full_name}</div>
                     </div>
-                    <div className="text-xs text-slate-500">{activity.time}</div>
+                    <div className="text-xs text-slate-500">
+                      {new Date(patient.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                 ))}
+                {patients.length === 0 && (
+                  <div className="text-center py-4 text-slate-500">
+                    <p>No recent activity</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Upcoming Tasks */}
+          {/* Upcoming Appointments */}
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm animate-fade-in" style={{ animationDelay: '700ms' }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-blue-600" />
-                Upcoming Tasks
+                Upcoming Appointments
               </CardTitle>
               <CardDescription>
-                Don't forget these important items
+                Next scheduled appointments
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {[
-                  { task: 'Follow up with patient', due: 'Today', priority: 'high' },
-                  { task: 'Order dental supplies', due: 'Tomorrow', priority: 'medium' },
-                  { task: 'Update treatment records', due: 'This week', priority: 'low' },
-                ].map((task, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-                    <div>
-                      <div className="font-medium text-slate-900">{task.task}</div>
-                      <div className="text-sm text-slate-600">Due: {task.due}</div>
+                {appointments
+                  .filter(apt => new Date(apt.appointment_date) >= new Date() && apt.status === 'scheduled')
+                  .slice(0, 3)
+                  .map((appointment, index) => (
+                    <div key={appointment.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                      <div>
+                        <div className="font-medium text-slate-900">{appointment.patients?.full_name || 'Unknown'}</div>
+                        <div className="text-sm text-slate-600">
+                          {appointment.appointment_date} at {appointment.appointment_time}
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {appointment.appointment_type}
+                      </div>
                     </div>
-                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      task.priority === 'high' ? 'bg-red-100 text-red-700' :
-                      task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {task.priority}
-                    </div>
+                  ))}
+                {appointments.filter(apt => new Date(apt.appointment_date) >= new Date() && apt.status === 'scheduled').length === 0 && (
+                  <div className="text-center py-4 text-slate-500">
+                    <p>No upcoming appointments</p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>

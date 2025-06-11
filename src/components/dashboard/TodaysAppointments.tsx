@@ -5,65 +5,46 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, User, Phone, Calendar, FileText, Stethoscope } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-const appointmentsData = [
-  {
-    id: 1,
-    time: '09:00 AM',
-    patientName: 'John Doe',
-    patientId: 'P001',
-    phone: '+91 98765 43210',
-    type: 'Cleaning',
-    status: 'scheduled'
-  },
-  {
-    id: 2,
-    time: '10:30 AM',
-    patientName: 'Sarah Johnson',
-    patientId: 'P024',
-    phone: '+91 87654 32109',
-    type: 'Root Canal',
-    status: 'in-progress'
-  },
-  {
-    id: 3,
-    time: '02:00 PM',
-    patientName: 'Mike Wilson',
-    patientId: 'P035',
-    phone: '+91 76543 21098',
-    type: 'Consultation',
-    status: 'scheduled'
-  },
-  {
-    id: 4,
-    time: '03:30 PM',
-    patientName: 'Emma Brown',
-    patientId: 'P018',
-    phone: '+91 65432 10987',
-    type: 'Filling',
-    status: 'completed'
-  }
-];
+import { useAppointments } from '@/hooks/useAppointments';
 
 export const TodaysAppointments: React.FC = () => {
   const navigate = useNavigate();
+  const { appointments, isLoading } = useAppointments();
+
+  // Filter today's appointments
+  const today = new Date().toISOString().split('T')[0];
+  const todaysAppointments = appointments.filter(apt => apt.appointment_date === today);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled':
         return 'bg-blue-100 text-blue-800';
-      case 'in-progress':
-        return 'bg-yellow-100 text-yellow-800';
       case 'completed':
         return 'bg-green-100 text-green-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'rescheduled':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
   const handleRecordTreatment = (appointment: any) => {
-    navigate(`/in-patient-treatment?patient=${appointment.patientId}&name=${encodeURIComponent(appointment.patientName)}&type=appointment`);
+    navigate(`/in-patient-treatment?patient=${appointment.patient_id}&name=${encodeURIComponent(appointment.patients?.full_name || 'Unknown')}&type=appointment`);
   };
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white border-slate-200">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-white border-slate-200">
@@ -73,60 +54,76 @@ export const TodaysAppointments: React.FC = () => {
           Today's Appointments
         </CardTitle>
         <CardDescription>
-          {appointmentsData.length} appointments scheduled for today
+          {todaysAppointments.length} appointments scheduled for today
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {appointmentsData.map((appointment) => (
-          <div
-            key={appointment.id}
-            className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors"
-          >
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                <Clock className="w-4 h-4 text-slate-500" />
-                {appointment.time}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium text-slate-900">
-                    {appointment.patientName}
-                  </span>
-                  <span className="text-sm text-slate-500">
-                    ({appointment.patientId})
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Phone className="w-3 h-3 text-slate-400" />
-                  <span className="text-xs text-slate-500">
-                    {appointment.phone}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-slate-600">{appointment.type}</span>
-              <Badge className={getStatusColor(appointment.status)}>
-                {appointment.status}
-              </Badge>
-              {appointment.status !== 'completed' && (
-                <Button 
-                  size="sm"
-                  onClick={() => handleRecordTreatment(appointment)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                  title="Record Treatment"
-                >
-                  <Stethoscope className="w-4 h-4 mr-1" />
-                  Record Treatment
-                </Button>
-              )}
-            </div>
+        {todaysAppointments.length === 0 ? (
+          <div className="text-center py-8 text-slate-500">
+            <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+            <p>No appointments scheduled for today.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => navigate('/appointments')}
+            >
+              Schedule New Appointment
+            </Button>
           </div>
-        ))}
-        <Button variant="outline" className="w-full mt-4">
-          View All Appointments
-        </Button>
+        ) : (
+          <>
+            {todaysAppointments.map((appointment) => (
+              <div
+                key={appointment.id}
+                className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
+                    <Clock className="w-4 h-4 text-slate-500" />
+                    {appointment.appointment_time}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-slate-500" />
+                      <span className="font-medium text-slate-900">
+                        {appointment.patients?.full_name || 'Unknown Patient'}
+                      </span>
+                      <span className="text-sm text-slate-500">
+                        ({appointment.patient_id.slice(0, 8)}...)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Phone className="w-3 h-3 text-slate-400" />
+                      <span className="text-xs text-slate-500">
+                        {appointment.patients?.mobile_number || 'No phone'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-slate-600">{appointment.appointment_type}</span>
+                  <Badge className={getStatusColor(appointment.status)}>
+                    {appointment.status}
+                  </Badge>
+                  {appointment.status !== 'completed' && (
+                    <Button 
+                      size="sm"
+                      onClick={() => handleRecordTreatment(appointment)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      title="Record Treatment"
+                    >
+                      <Stethoscope className="w-4 h-4 mr-1" />
+                      Record Treatment
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <Button variant="outline" className="w-full mt-4" onClick={() => navigate('/appointments')}>
+              View All Appointments
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Plus, Search, User, Phone, FileText, Eye, CalendarX, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, Plus, Search, User, Phone, FileText, Eye, CalendarX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedAppointmentForm } from '@/components/appointments/EnhancedAppointmentForm';
 import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
@@ -11,42 +12,11 @@ import { RescheduleAppointment } from '@/components/appointments/RescheduleAppoi
 import { HolidayCalendar } from '@/components/calendar/HolidayCalendar';
 import { ClinicClosureManager } from '@/components/appointments/ClinicClosureManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const appointmentsData = [
-  {
-    id: 'A001',
-    patientName: 'John Doe',
-    patientId: 'P001',
-    time: '09:00 AM',
-    phone: '+91 9876543210',
-    reason: 'Routine Checkup',
-    status: 'scheduled',
-    type: 'checkup'
-  },
-  {
-    id: 'A002',
-    patientName: 'Sarah Johnson',
-    patientId: 'P024',
-    time: '10:30 AM',
-    phone: '+91 9876543211',
-    reason: 'Root Canal Follow-up',
-    status: 'in-progress',
-    type: 'treatment'
-  },
-  {
-    id: 'A003',
-    patientName: 'Mike Wilson',
-    patientId: 'P035',
-    time: '02:00 PM',
-    phone: '+91 9876543212',
-    reason: 'Teeth Cleaning',
-    status: 'completed',
-    type: 'cleaning'
-  }
-];
+import { useAppointments } from '@/hooks/useAppointments';
 
 const Appointments = () => {
   const navigate = useNavigate();
+  const { appointments, isLoading } = useAppointments();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [showPatientDetails, setShowPatientDetails] = useState(false);
@@ -58,20 +28,22 @@ const Appointments = () => {
     switch (status) {
       case 'scheduled':
         return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'in-progress':
-        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
       case 'completed':
         return 'bg-green-50 text-green-700 border-green-200';
+      case 'cancelled':
+        return 'bg-red-50 text-red-700 border-red-200';
+      case 'rescheduled':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
-  const filteredAppointments = appointmentsData.filter(appointment =>
-    appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    appointment.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    appointment.phone.includes(searchTerm) ||
-    appointment.reason.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAppointments = appointments.filter(appointment =>
+    appointment.patients?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.patients?.mobile_number.includes(searchTerm) ||
+    appointment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleViewPatient = (patientId: string) => {
@@ -86,19 +58,25 @@ const Appointments = () => {
   const handleReschedule = (appointment: any) => {
     setSelectedAppointment({
       id: appointment.id,
-      patientName: appointment.patientName,
-      patientId: appointment.patientId,
-      currentDate: new Date(),
-      currentTime: appointment.time,
-      reason: appointment.reason
+      patientName: appointment.patients?.full_name,
+      patientId: appointment.patient_id,
+      currentDate: new Date(appointment.appointment_date),
+      currentTime: appointment.appointment_time,
+      reason: appointment.notes
     });
     setShowReschedule(true);
   };
 
-  const handleRescheduleConfirm = (appointmentId: string, newDate: Date, newTime: string) => {
-    console.log('Rescheduling appointment:', appointmentId, 'to', newDate, newTime);
-    // Here you would update the appointment in your data store
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading appointments...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -146,22 +124,17 @@ const Appointments = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-blue-600" />
-                  Today's Schedule - {new Date().toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  All Appointments - {appointments.length} total
                 </CardTitle>
                 <CardDescription>
-                  {filteredAppointments.length} appointments {searchTerm ? 'found' : 'scheduled'}
+                  {filteredAppointments.length} appointments {searchTerm ? 'found' : 'in database'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {filteredAppointments.length === 0 ? (
                   <div className="text-center py-8 text-slate-500">
                     <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                    <p>{searchTerm ? 'No appointments found matching your search.' : 'No appointments scheduled for today.'}</p>
+                    <p>{searchTerm ? 'No appointments found matching your search.' : 'No appointments scheduled yet.'}</p>
                     <Button 
                       variant="outline" 
                       className="mt-4"
@@ -182,17 +155,18 @@ const Appointments = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-3">
-                            <span className="font-semibold text-slate-900">{appointment.patientName}</span>
-                            <span className="text-sm text-slate-500">({appointment.patientId})</span>
-                            <span className="text-sm font-mono text-slate-600">{appointment.time}</span>
+                            <span className="font-semibold text-slate-900">{appointment.patients?.full_name || 'Unknown Patient'}</span>
+                            <span className="text-sm text-slate-500">({appointment.patient_id.slice(0, 8)}...)</span>
+                            <span className="text-sm font-mono text-slate-600">{appointment.appointment_time}</span>
                           </div>
                           <div className="mt-1 text-sm text-slate-600">
                             <div className="flex items-center gap-2">
                               <Phone className="w-3 h-3" />
-                              {appointment.phone}
+                              {appointment.patients?.mobile_number || 'No phone'}
                             </div>
                             <div className="text-xs text-slate-500 mt-1">
-                              {appointment.reason}
+                              Date: {appointment.appointment_date} | Type: {appointment.appointment_type}
+                              {appointment.notes && ` | ${appointment.notes}`}
                             </div>
                           </div>
                         </div>
@@ -213,7 +187,7 @@ const Appointments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleViewPatient(appointment.patientId)}
+                            onClick={() => handleViewPatient(appointment.patient_id)}
                             title="View Patient Details"
                           >
                             <Eye className="w-4 h-4" />
@@ -221,7 +195,7 @@ const Appointments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => navigate(`/patient-record?patient=${appointment.patientId}`)}
+                            onClick={() => navigate(`/patient-record?patient=${appointment.patient_id}`)}
                             title="View Full Patient Record"
                           >
                             <User className="w-4 h-4" />
@@ -292,7 +266,7 @@ const Appointments = () => {
           appointment={selectedAppointment}
           open={showReschedule}
           onOpenChange={setShowReschedule}
-          onReschedule={handleRescheduleConfirm}
+          onReschedule={() => {}}
         />
       )}
     </div>
