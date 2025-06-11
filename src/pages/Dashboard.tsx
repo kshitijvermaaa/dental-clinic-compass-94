@@ -12,13 +12,11 @@ const Dashboard = () => {
   const { patients, isLoading: patientsLoading } = usePatients();
   const { appointments, isLoading: appointmentsLoading } = useAppointments();
 
-  // Calculate today's appointments
   const today = new Date().toISOString().split('T')[0];
   const todaysAppointments = appointments.filter(apt => apt.appointment_date === today);
   const completedToday = todaysAppointments.filter(apt => apt.status === 'completed').length;
   const pendingToday = todaysAppointments.filter(apt => apt.status === 'scheduled').length;
 
-  // Calculate this week's appointments
   const startOfWeek = new Date();
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
   const endOfWeek = new Date();
@@ -63,7 +61,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header with Animation */}
         <div className="space-y-2 animate-fade-in">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
             Dashboard
@@ -74,7 +71,6 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Stats Cards with Staggered Animation */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsData.map((stat, index) => (
             <div 
@@ -87,22 +83,17 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Today's Appointments - Takes 2 columns */}
           <div className="lg:col-span-2 animate-fade-in" style={{ animationDelay: '400ms' }}>
             <TodaysAppointments />
           </div>
 
-          {/* Quick Actions - Takes 1 column */}
           <div className="animate-fade-in" style={{ animationDelay: '500ms' }}>
             <QuickActions />
           </div>
         </div>
 
-        {/* Additional Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Activity */}
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm animate-fade-in" style={{ animationDelay: '600ms' }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -119,7 +110,7 @@ const Dashboard = () => {
                   <div key={patient.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
                     <div>
                       <div className="font-medium text-slate-900">New patient registered</div>
-                      <div className="text-sm text-slate-600">{patient.full_name}</div>
+                      <div className="text-sm text-slate-600">{patient.full_name} ({patient.patient_id})</div>
                     </div>
                     <div className="text-xs text-slate-500">
                       {new Date(patient.created_at).toLocaleDateString()}
@@ -135,7 +126,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Upcoming Appointments */}
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm animate-fade-in" style={{ animationDelay: '700ms' }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

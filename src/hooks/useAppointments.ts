@@ -17,6 +17,7 @@ export interface Appointment {
     full_name: string;
     mobile_number: string;
     email?: string;
+    patient_id: string;
   };
 }
 
@@ -35,7 +36,8 @@ export const useAppointments = () => {
           patients:patient_id (
             full_name,
             mobile_number,
-            email
+            email,
+            patient_id
           )
         `)
         .order('appointment_date', { ascending: true })
@@ -77,7 +79,6 @@ export const useAppointments = () => {
         throw error;
       }
 
-      // Refresh the appointments list
       await fetchAppointments();
       return data;
     } catch (error) {
@@ -100,7 +101,6 @@ export const useAppointments = () => {
         throw error;
       }
 
-      // Refresh the appointments list
       await fetchAppointments();
       return data;
     } catch (error) {

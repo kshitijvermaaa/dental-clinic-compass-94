@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Phone, Mail, Calendar, FileText, Activity, Download, Edit, Stethoscope } from 'lucide-react';
+import { User, Phone, Mail, Calendar, FileText, Activity, Download, Edit, Stethoscope, CreditCard } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePatients } from '@/hooks/usePatients';
 import { useAppointments } from '@/hooks/useAppointments';
+import { PatientCard } from '@/components/patients/PatientCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,11 +56,9 @@ const PatientRecord = () => {
     try {
       setIsLoading(true);
       
-      // Fetch patient details
       const patientData = await getPatientById(patientId);
       setPatient(patientData);
 
-      // Fetch treatments
       const { data: treatmentsData } = await supabase
         .from('treatments')
         .select('*')
@@ -69,7 +67,6 @@ const PatientRecord = () => {
       
       setTreatments(treatmentsData || []);
 
-      // Fetch prescriptions
       const { data: prescriptionsData } = await supabase
         .from('prescriptions')
         .select('*')
@@ -186,6 +183,7 @@ const PatientRecord = () => {
                 {patient.patient_nickname && (
                   <div className="text-sm text-slate-500">"{patient.patient_nickname}"</div>
                 )}
+                <div className="text-sm text-slate-500">ID: {patient.patient_id}</div>
               </div>
               <Badge className="bg-green-50 text-green-700 border-green-200 border">Active</Badge>
             </CardTitle>
@@ -251,10 +249,11 @@ const PatientRecord = () => {
 
         {/* Detailed Records */}
         <Tabs defaultValue="treatments" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="treatments">Treatments ({treatments.length})</TabsTrigger>
             <TabsTrigger value="appointments">Appointments ({patientAppointments.length})</TabsTrigger>
             <TabsTrigger value="prescriptions">Prescriptions ({prescriptions.length})</TabsTrigger>
+            <TabsTrigger value="idcard">ID Card</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
 
@@ -377,6 +376,21 @@ const PatientRecord = () => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="idcard" className="space-y-4">
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-blue-600" />
+                  Patient ID Card
+                </CardTitle>
+                <CardDescription>Digital ID card for the patient</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PatientCard patient={patient} />
               </CardContent>
             </Card>
           </TabsContent>

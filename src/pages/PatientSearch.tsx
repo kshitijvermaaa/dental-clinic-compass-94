@@ -8,34 +8,18 @@ import { Search, User, Phone, Calendar, FileText, Download, Eye, Plus, Stethosco
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Patient {
-  id: string;
-  full_name: string;
-  patient_nickname?: string;
-  mobile_number: string;
-  email?: string;
-  gender: string;
-  date_of_birth: string;
-  created_at: string;
-}
+import { usePatients } from '@/hooks/usePatients';
 
 const PatientSearch = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { patients, isLoading } = usePatients();
+  
   const [searchTerm, setSearchTerm] = useState(searchParams.get('patient') || '');
   const [showPatientDetails, setShowPatientDetails] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch patients from Supabase
-  useEffect(() => {
-    fetchPatients();
-  }, []);
+  const [filteredPatients, setFilteredPatients] = useState(patients);
 
   // Filter patients based on search term
   useEffect(() => {
@@ -44,43 +28,13 @@ const PatientSearch = () => {
     } else {
       const filtered = patients.filter(patient =>
         patient.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.patient_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         patient.mobile_number.includes(searchTerm) ||
         (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredPatients(filtered);
     }
   }, [searchTerm, patients]);
-
-  const fetchPatients = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching patients:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load patients. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setPatients(data || []);
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while loading patients.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const calculateAge = (dateOfBirth: string) => {
     const today = new Date();
@@ -211,7 +165,7 @@ const PatientSearch = () => {
                           {patient.full_name}
                           {patient.patient_nickname && ` (${patient.patient_nickname})`}
                         </span>
-                        <span className="text-sm text-slate-500">({patient.id.slice(0, 8)}...)</span>
+                        <span className="text-sm text-slate-500">({patient.patient_id})</span>
                         <Badge className="bg-green-50 text-green-700 border-green-200 border font-medium text-xs">
                           active
                         </Badge>
@@ -235,7 +189,7 @@ const PatientSearch = () => {
                     <Button 
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleNewTreatment(patient.id, patient.full_name)}
+                      onClick={() => handleNewTreatment(patient.patient_id, patient.full_name)}
                       title="Start New Treatment"
                     >
                       <Stethoscope className="w-4 h-4" />
@@ -259,7 +213,7 @@ const PatientSearch = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => handleViewPatient(patient.id)}
+                      onClick={() => handleViewPatient(patient.patient_id)}
                       title="Quick View Patient Details"
                     >
                       <Eye className="w-4 h-4" />
@@ -267,7 +221,7 @@ const PatientSearch = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/patient-record?patient=${patient.id}`)}
+                      onClick={() => navigate(`/patient-record?patient=${patient.patient_id}`)}
                       title="View Complete Patient Record"
                     >
                       <User className="w-4 h-4" />
@@ -288,7 +242,6 @@ const PatientSearch = () => {
         </Card>
       </div>
 
-      {/* Patient Details Dialog */}
       <PatientDetailsDialog
         open={showPatientDetails}
         onOpenChange={setShowPatientDetails}

@@ -17,7 +17,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
-          patient_id: string
+          patient_id: string | null
           status: Database["public"]["Enums"]["appointment_status"]
           updated_at: string
         }
@@ -28,7 +28,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
-          patient_id: string
+          patient_id?: string | null
           status?: Database["public"]["Enums"]["appointment_status"]
           updated_at?: string
         }
@@ -39,17 +39,17 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
-          patient_id?: string
+          patient_id?: string | null
           status?: Database["public"]["Enums"]["appointment_status"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "appointments_patient_id_fkey"
+            foreignKeyName: "fk_appointments_patient_id"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
-            referencedColumns: ["id"]
+            referencedColumns: ["patient_id"]
           },
         ]
       }
@@ -119,6 +119,7 @@ export type Database = {
           id: string
           insurance_details: string | null
           mobile_number: string
+          patient_id: string
           patient_nickname: string | null
           referred_by: string | null
           updated_at: string
@@ -137,6 +138,7 @@ export type Database = {
           id?: string
           insurance_details?: string | null
           mobile_number: string
+          patient_id?: string
           patient_nickname?: string | null
           referred_by?: string | null
           updated_at?: string
@@ -155,6 +157,7 @@ export type Database = {
           id?: string
           insurance_details?: string | null
           mobile_number?: string
+          patient_id?: string
           patient_nickname?: string | null
           referred_by?: string | null
           updated_at?: string
@@ -170,7 +173,7 @@ export type Database = {
           id: string
           instructions: string | null
           medication_name: string
-          patient_id: string
+          patient_id: string | null
           prescribed_date: string
           treatment_id: string | null
         }
@@ -182,7 +185,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           medication_name: string
-          patient_id: string
+          patient_id?: string | null
           prescribed_date?: string
           treatment_id?: string | null
         }
@@ -194,17 +197,17 @@ export type Database = {
           id?: string
           instructions?: string | null
           medication_name?: string
-          patient_id?: string
+          patient_id?: string | null
           prescribed_date?: string
           treatment_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "prescriptions_patient_id_fkey"
+            foreignKeyName: "fk_prescriptions_patient_id"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
-            referencedColumns: ["id"]
+            referencedColumns: ["patient_id"]
           },
           {
             foreignKeyName: "prescriptions_treatment_id_fkey"
@@ -247,7 +250,7 @@ export type Database = {
           materials_used: string | null
           next_appointment_date: string | null
           notes: string | null
-          patient_id: string
+          patient_id: string | null
           procedure_done: string
           teeth_involved: string[] | null
           treatment_cost: number | null
@@ -262,7 +265,7 @@ export type Database = {
           materials_used?: string | null
           next_appointment_date?: string | null
           notes?: string | null
-          patient_id: string
+          patient_id?: string | null
           procedure_done: string
           teeth_involved?: string[] | null
           treatment_cost?: number | null
@@ -277,7 +280,7 @@ export type Database = {
           materials_used?: string | null
           next_appointment_date?: string | null
           notes?: string | null
-          patient_id?: string
+          patient_id?: string | null
           procedure_done?: string
           teeth_involved?: string[] | null
           treatment_cost?: number | null
@@ -287,17 +290,17 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_treatments_patient_id"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
             foreignKeyName: "treatments_appointment_id_fkey"
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "treatments_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]
@@ -307,7 +310,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_patient_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       appointment_status:

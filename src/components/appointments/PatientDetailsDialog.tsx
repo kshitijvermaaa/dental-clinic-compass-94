@@ -90,14 +90,13 @@ export const PatientDetailsDialog: React.FC<PatientDetailsDialogProps> = ({ open
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Basic Information */}
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <h3 className="text-xl font-semibold text-slate-900">{patient.full_name}</h3>
               {patient.patient_nickname && (
                 <p className="text-sm text-slate-600">"{patient.patient_nickname}"</p>
               )}
-              <p className="text-sm text-slate-600">Patient ID: {patient.id.slice(0, 8)}...</p>
+              <p className="text-sm text-slate-600">Patient ID: {patient.patient_id}</p>
               <Badge className="bg-green-50 text-green-700 border-green-200 border font-medium text-xs">
                 active
               </Badge>
@@ -110,7 +109,6 @@ export const PatientDetailsDialog: React.FC<PatientDetailsDialogProps> = ({ open
 
           <Separator />
 
-          {/* Contact Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <h4 className="font-medium text-slate-900">Contact Information</h4>
@@ -152,7 +150,6 @@ export const PatientDetailsDialog: React.FC<PatientDetailsDialogProps> = ({ open
 
           <Separator />
 
-          {/* Medical Information */}
           <div className="space-y-3">
             <h4 className="font-medium text-slate-900">Medical Information</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -173,13 +170,12 @@ export const PatientDetailsDialog: React.FC<PatientDetailsDialogProps> = ({ open
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
             <Button 
               variant="outline" 
               onClick={() => {
                 onOpenChange(false);
-                navigate(`/patient-record?patient=${patient.id}`);
+                navigate(`/patient-record?patient=${patient.patient_id}`);
               }}
               className="flex-1"
               title="View Complete Patient Record"

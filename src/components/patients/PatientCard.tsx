@@ -7,21 +7,33 @@ import html2canvas from 'html2canvas';
 
 interface PatientCardProps {
   patient: {
-    id: string;
-    name: string;
-    phone: string;
-    email: string;
-    age: number;
+    patient_id: string;
+    full_name: string;
+    mobile_number: string;
+    email?: string;
+    date_of_birth: string;
     gender: string;
-    bloodGroup: string;
+    blood_group?: string;
     address: string;
-    dateOfBirth: string;
-    emergencyContact?: string;
+    emergency_contact?: string;
   };
   clinicName?: string;
 }
 
 export const PatientCard: React.FC<PatientCardProps> = ({ patient, clinicName = "Dental Clinic" }) => {
+  const calculateAge = (dateOfBirth: string) => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
   const downloadCard = async () => {
     const cardElement = document.getElementById('patient-card');
     if (cardElement) {
@@ -33,7 +45,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient, clinicName = 
       });
       
       const link = document.createElement('a');
-      link.download = `patient-card-${patient.id}.png`;
+      link.download = `patient-card-${patient.patient_id}.png`;
       link.href = canvas.toDataURL();
       link.click();
     }
@@ -67,15 +79,17 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient, clinicName = 
                 <User className="w-10 h-10 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-white">{patient.name}</h3>
-                <p className="text-blue-100 text-sm">ID: {patient.id}</p>
+                <h3 className="text-lg font-bold text-white">{patient.full_name}</h3>
+                <p className="text-blue-100 text-sm">ID: {patient.patient_id}</p>
                 <div className="flex items-center gap-4 text-sm text-blue-100 mt-1">
-                  <span>{patient.age}Y</span>
+                  <span>{calculateAge(patient.date_of_birth)}Y</span>
                   <span>{patient.gender}</span>
-                  <div className="flex items-center gap-1">
-                    <Droplets className="w-3 h-3" />
-                    <span>{patient.bloodGroup}</span>
-                  </div>
+                  {patient.blood_group && (
+                    <div className="flex items-center gap-1">
+                      <Droplets className="w-3 h-3" />
+                      <span>{patient.blood_group}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -84,15 +98,17 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient, clinicName = 
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-blue-100">
                 <Phone className="w-3 h-3" />
-                <span>{patient.phone}</span>
+                <span>{patient.mobile_number}</span>
               </div>
-              <div className="flex items-center gap-2 text-blue-100">
-                <Mail className="w-3 h-3" />
-                <span className="truncate">{patient.email}</span>
-              </div>
+              {patient.email && (
+                <div className="flex items-center gap-2 text-blue-100">
+                  <Mail className="w-3 h-3" />
+                  <span className="truncate">{patient.email}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-blue-100">
                 <Calendar className="w-3 h-3" />
-                <span>DOB: {patient.dateOfBirth}</span>
+                <span>DOB: {patient.date_of_birth}</span>
               </div>
               <div className="flex items-start gap-2 text-blue-100">
                 <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
@@ -101,10 +117,10 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient, clinicName = 
             </div>
 
             {/* Emergency Contact */}
-            {patient.emergencyContact && (
+            {patient.emergency_contact && (
               <div className="border-t border-blue-400 pt-3">
                 <p className="text-xs text-blue-200">Emergency Contact:</p>
-                <p className="text-sm text-blue-100">{patient.emergencyContact}</p>
+                <p className="text-sm text-blue-100">{patient.emergency_contact}</p>
               </div>
             )}
 

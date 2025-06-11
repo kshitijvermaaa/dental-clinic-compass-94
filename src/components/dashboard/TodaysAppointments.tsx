@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, User, Phone, Calendar, FileText, Stethoscope } from 'lucide-react';
+import { Clock, User, Phone, Calendar, Stethoscope } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppointments } from '@/hooks/useAppointments';
 
@@ -11,7 +11,6 @@ export const TodaysAppointments: React.FC = () => {
   const navigate = useNavigate();
   const { appointments, isLoading } = useAppointments();
 
-  // Filter today's appointments
   const today = new Date().toISOString().split('T')[0];
   const todaysAppointments = appointments.filter(apt => apt.appointment_date === today);
 
@@ -89,7 +88,7 @@ export const TodaysAppointments: React.FC = () => {
                         {appointment.patients?.full_name || 'Unknown Patient'}
                       </span>
                       <span className="text-sm text-slate-500">
-                        ({appointment.patient_id.slice(0, 8)}...)
+                        ({appointment.patients?.patient_id || appointment.patient_id})
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">

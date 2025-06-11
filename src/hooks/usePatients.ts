@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Patient {
   id: string;
+  patient_id: string;
   full_name: string;
   patient_nickname?: string;
   gender: string;
@@ -58,7 +59,7 @@ export const usePatients = () => {
     }
   };
 
-  const createPatient = async (patientData: Omit<Patient, 'id' | 'created_at' | 'updated_at'>) => {
+  const createPatient = async (patientData: Omit<Patient, 'id' | 'patient_id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('patients')
@@ -71,7 +72,6 @@ export const usePatients = () => {
         throw error;
       }
 
-      // Refresh the patients list
       await fetchPatients();
       return data;
     } catch (error) {
@@ -85,7 +85,7 @@ export const usePatients = () => {
       const { data, error } = await supabase
         .from('patients')
         .update(updates)
-        .eq('id', patientId)
+        .eq('patient_id', patientId)
         .select()
         .single();
 
@@ -94,7 +94,6 @@ export const usePatients = () => {
         throw error;
       }
 
-      // Refresh the patients list
       await fetchPatients();
       return data;
     } catch (error) {
@@ -108,7 +107,7 @@ export const usePatients = () => {
       const { data, error } = await supabase
         .from('patients')
         .select('*')
-        .eq('id', patientId)
+        .eq('patient_id', patientId)
         .single();
 
       if (error) {
