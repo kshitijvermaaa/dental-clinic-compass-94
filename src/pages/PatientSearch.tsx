@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,42 +8,18 @@ import { Search, User, Phone, Calendar, FileText, Download, Eye, Plus, Stethosco
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PatientDetailsDialog } from '@/components/appointments/PatientDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-const patientsData = [
-  {
-    id: 'P001',
-    name: 'John Doe',
-    phone: '+91 9876543210',
-    email: 'john.doe@email.com',
-    age: 35,
-    gender: 'Male',
-    lastVisit: '2024-06-01',
-    totalVisits: 12,
-    status: 'active'
-  },
-  {
-    id: 'P024',
-    name: 'Sarah Johnson',
-    phone: '+91 9876543211',
-    email: 'sarah.j@email.com',
-    age: 28,
-    gender: 'Female',
-    lastVisit: '2024-06-05',
-    totalVisits: 8,
-    status: 'active'
-  },
-  {
-    id: 'P035',
-    name: 'Mike Wilson',
-    phone: '+91 9876543212',
-    email: 'mike.w@email.com',
-    age: 42,
-    gender: 'Male',
-    lastVisit: '2024-05-28',
-    totalVisits: 15,
-    status: 'inactive'
-  }
-];
+interface Patient {
+  id: string;
+  full_name: string;
+  patient_nickname?: string;
+  mobile_number: string;
+  email?: string;
+  gender: string;
+  date_of_birth: string;
+  created_at: string;
+}
 
 const PatientSearch = () => {
   const navigate = useNavigate();
@@ -51,23 +28,71 @@ const PatientSearch = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('patient') || '');
   const [showPatientDetails, setShowPatientDetails] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredPatients = patientsData.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.phone.includes(searchTerm) ||
-    patient.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Fetch patients from Supabase
+  useEffect(() => {
+    fetchPatients();
+  }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-50 text-green-700 border-green-200';
-      case 'inactive':
-        return 'bg-slate-50 text-slate-700 border-slate-200';
-      default:
-        return 'bg-slate-50 text-slate-700 border-slate-200';
+  // Filter patients based on search term
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredPatients(patients);
+    } else {
+      const filtered = patients.filter(patient =>
+        patient.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.mobile_number.includes(searchTerm) ||
+        (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setFilteredPatients(filtered);
     }
+  }, [searchTerm, patients]);
+
+  const fetchPatients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching patients:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load patients. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setPatients(data || []);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while loading patients.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateAge = (dateOfBirth: string) => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
   };
 
   const handleViewPatient = (patientId: string) => {
@@ -89,6 +114,17 @@ const PatientSearch = () => {
   const handleNewTreatment = (patientId: string, patientName: string) => {
     navigate(`/in-patient-treatment?patient=${patientId}&name=${encodeURIComponent(patientName)}&type=appointment`);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading patients...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -150,7 +186,7 @@ const PatientSearch = () => {
             {filteredPatients.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <User className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>{searchTerm ? 'No patients found matching your search.' : 'Start typing to search for patients.'}</p>
+                <p>{searchTerm ? 'No patients found matching your search.' : 'No patients registered yet.'}</p>
                 <Button 
                   variant="outline" 
                   className="mt-4"
@@ -171,23 +207,26 @@ const PatientSearch = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold text-slate-900">{patient.name}</span>
-                        <span className="text-sm text-slate-500">({patient.id})</span>
-                        <Badge className={`${getStatusColor(patient.status)} border font-medium text-xs`}>
-                          {patient.status}
+                        <span className="font-semibold text-slate-900">
+                          {patient.full_name}
+                          {patient.patient_nickname && ` (${patient.patient_nickname})`}
+                        </span>
+                        <span className="text-sm text-slate-500">({patient.id.slice(0, 8)}...)</span>
+                        <Badge className="bg-green-50 text-green-700 border-green-200 border font-medium text-xs">
+                          active
                         </Badge>
                       </div>
                       <div className="mt-1 text-sm text-slate-600">
                         <div className="flex items-center gap-4">
                           <span className="flex items-center gap-1">
                             <Phone className="w-3 h-3" />
-                            {patient.phone}
+                            {patient.mobile_number}
                           </span>
-                          <span>{patient.email}</span>
-                          <span>{patient.age}Y {patient.gender}</span>
+                          {patient.email && <span>{patient.email}</span>}
+                          <span>{calculateAge(patient.date_of_birth)}Y {patient.gender}</span>
                         </div>
                         <div className="text-xs text-slate-500 mt-1">
-                          Last visit: {patient.lastVisit} • {patient.totalVisits} total visits
+                          Registered: {new Date(patient.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -196,7 +235,7 @@ const PatientSearch = () => {
                     <Button 
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleNewTreatment(patient.id, patient.name)}
+                      onClick={() => handleNewTreatment(patient.id, patient.full_name)}
                       title="Start New Treatment"
                     >
                       <Stethoscope className="w-4 h-4" />
@@ -236,7 +275,7 @@ const PatientSearch = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => handleDownloadRecords(patient.name)}
+                      onClick={() => handleDownloadRecords(patient.full_name)}
                       title="Download Medical Records"
                     >
                       <Download className="w-4 h-4" />

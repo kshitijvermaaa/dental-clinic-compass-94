@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,9 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UserPlus, Upload, Save } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const RegisterPatient = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     gender: '',
@@ -29,18 +35,88 @@ const RegisterPatient = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Patient registration data:', formData);
-    const patientId = 'P' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    toast('Patient registered successfully!', {
-      description: `Patient ID: ${patientId} - Redirecting to treatment management...`,
-    });
     
-    // Redirect to treatment flow for the new patient
-    setTimeout(() => {
-      window.location.href = `/treatment-flow?patient=${patientId}&new=true`;
-    }, 2000);
+    if (!formData.fullName || !formData.gender || !formData.dateOfBirth || !formData.address || !formData.mobileNumber) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .insert({
+          full_name: formData.fullName,
+          patient_nickname: formData.patientNickname || null,
+          gender: formData.gender,
+          date_of_birth: formData.dateOfBirth,
+          address: formData.address,
+          mobile_number: formData.mobileNumber,
+          email: formData.email || null,
+          blood_group: formData.bloodGroup || null,
+          allergies: formData.allergies || null,
+          referred_by: formData.referredBy || null,
+          emergency_contact: formData.emergencyContact || null,
+          chronic_conditions: formData.chronicConditions || null,
+          insurance_details: formData.insuranceDetails || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating patient:', error);
+        toast({
+          title: "Error",
+          description: "Failed to register patient. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: `Patient ${formData.fullName} registered successfully!`,
+      });
+
+      // Reset form
+      setFormData({
+        fullName: '',
+        gender: '',
+        dateOfBirth: '',
+        address: '',
+        mobileNumber: '',
+        email: '',
+        bloodGroup: '',
+        allergies: '',
+        referredBy: '',
+        patientNickname: '',
+        emergencyContact: '',
+        chronicConditions: '',
+        insuranceDetails: '',
+      });
+
+      // Redirect to patient search or treatment flow
+      setTimeout(() => {
+        navigate(`/search?patient=${data.id}`);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -263,7 +339,7 @@ const RegisterPatient = () => {
                     <p className="text-sm text-slate-500">
                       Supported formats: PDF, JPG, PNG (Max 10MB)
                     </p>
-                    <Button variant="outline" className="mt-4">
+                    <Button variant="outline" className="mt-4" type="button">
                       Choose Files
                     </Button>
                   </div>
@@ -272,10 +348,12 @@ const RegisterPatient = () => {
 
               {/* Submit Button */}
               <div className="flex justify-end gap-4">
-                <Button variant="outline">Cancel</Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button variant="outline" type="button" onClick={() => navigate('/search')}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                   <Save className="w-4 h-4 mr-2" />
-                  Register Patient
+                  {isLoading ? 'Registering...' : 'Register Patient'}
                 </Button>
               </div>
             </div>

@@ -1,0 +1,123 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+export interface Appointment {
+  id: string;
+  patient_id: string;
+  appointment_date: string;
+  appointment_time: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+  appointment_type: 'regular' | 'emergency' | 'walkin' | 'followup';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  patients?: {
+    full_name: string;
+    mobile_number: string;
+    email?: string;
+  };
+}
+
+export const useAppointments = () => {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchAppointments = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          patients:patient_id (
+            full_name,
+            mobile_number,
+            email
+          )
+        `)
+        .order('appointment_date', { ascending: true })
+        .order('appointment_time', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load appointments. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAppointments(data || []);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while loading appointments.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at' | 'updated_at' | 'patients'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert(appointmentData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating appointment:', error);
+        throw error;
+      }
+
+      // Refresh the appointments list
+      await fetchAppointments();
+      return data;
+    } catch (error) {
+      console.error('Error in createAppointment:', error);
+      throw error;
+    }
+  };
+
+  const updateAppointment = async (appointmentId: string, updates: Partial<Appointment>) => {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .update(updates)
+        .eq('id', appointmentId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating appointment:', error);
+        throw error;
+      }
+
+      // Refresh the appointments list
+      await fetchAppointments();
+      return data;
+    } catch (error) {
+      console.error('Error in updateAppointment:', error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  return {
+    appointments,
+    isLoading,
+    fetchAppointments,
+    createAppointment,
+    updateAppointment,
+  };
+};
