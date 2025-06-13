@@ -29,6 +29,8 @@ export const useAppointments = () => {
   const fetchAppointments = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching appointments...');
+      
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -53,6 +55,7 @@ export const useAppointments = () => {
         return;
       }
 
+      console.log('Appointments fetched successfully:', data);
       setAppointments(data || []);
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -68,6 +71,8 @@ export const useAppointments = () => {
 
   const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at' | 'updated_at' | 'patients'>) => {
     try {
+      console.log('Creating appointment:', appointmentData);
+      
       const { data, error } = await supabase
         .from('appointments')
         .insert(appointmentData)
@@ -79,6 +84,7 @@ export const useAppointments = () => {
         throw error;
       }
 
+      console.log('Appointment created successfully:', data);
       await fetchAppointments();
       return data;
     } catch (error) {
@@ -89,6 +95,8 @@ export const useAppointments = () => {
 
   const updateAppointment = async (appointmentId: string, updates: Partial<Appointment>) => {
     try {
+      console.log('Updating appointment:', appointmentId, updates);
+      
       const { data, error } = await supabase
         .from('appointments')
         .update(updates)
@@ -101,6 +109,7 @@ export const useAppointments = () => {
         throw error;
       }
 
+      console.log('Appointment updated successfully:', data);
       await fetchAppointments();
       return data;
     } catch (error) {

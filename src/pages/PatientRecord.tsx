@@ -1,28 +1,87 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, Calendar, FileText, Download, Edit, Heart, AlertCircle, Pill, Stethoscope, Receipt } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { usePatients } from '@/hooks/usePatients';
 import { PaymentHistory } from '@/components/patients/PaymentHistory';
+import { 
+  User, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Calendar, 
+  FileText, 
+  Stethoscope,
+  Edit,
+  Save,
+  X,
+  Plus,
+  Activity,
+  Clock,
+  DollarSign
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+interface Patient {
+  id: string;
+  patient_id: string;
+  full_name: string;
+  date_of_birth: string;
+  gender: string;
+  mobile_number: string;
+  email?: string;
+  address: string;
+  blood_group?: string;
+  allergies?: string;
+  chronic_conditions?: string;
+  emergency_contact?: string;
+  insurance_details?: string;
+  referred_by?: string;
+  patient_nickname?: string;
+  created_at: string;
+  updated_at: string;
+  balance?: number;
+}
+
+interface Treatment {
+  id: string;
+  procedure_done: string;
+  treatment_date: string;
+  treatment_cost?: number;
+  treatment_status: string;
+  materials_used?: string;
+  notes?: string;
+  teeth_involved?: string[];
+  next_appointment_date?: string;
+}
+
+interface Appointment {
+  id: string;
+  appointment_date: string;
+  appointment_time: string;
+  appointment_type: string;
+  status: string;
+  notes?: string;
+}
 
 const PatientRecord = () => {
   const [searchParams] = useSearchParams();
-  const patientId = searchParams.get('patient');
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const { getPatientById } = usePatients();
   
-  const [patient, setPatient] = useState<any>(null);
-  const [treatments, setTreatments] = useState<any[]>([]);
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const patientId = searchParams.get('patient');
+  
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPatient, setEditedPatient] = useState<Partial<Patient>>({});
 
   useEffect(() => {
     if (patientId) {
@@ -31,63 +90,99 @@ const PatientRecord = () => {
   }, [patientId]);
 
   const fetchPatientData = async () => {
-    if (!patientId) return;
-    
     try {
       setIsLoading(true);
       
       // Fetch patient details
-      const patientData = await getPatientById(patientId);
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('patient_id', patientId)
+        .single();
+
+      if (patientError) {
+        console.error('Error fetching patient:', patientError);
+        toast({
+          title: "Error",
+          description: "Failed to load patient data",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setPatient(patientData);
-      
+      setEditedPatient(patientData);
+
       // Fetch treatments
-      const { data: treatmentData, error: treatmentError } = await supabase
+      const { data: treatmentsData, error: treatmentsError } = await supabase
         .from('treatments')
         .select('*')
         .eq('patient_id', patientId)
         .order('treatment_date', { ascending: false });
 
-      if (treatmentError) {
-        console.error('Error fetching treatments:', treatmentError);
+      if (treatmentsError) {
+        console.error('Error fetching treatments:', treatmentsError);
       } else {
-        setTreatments(treatmentData || []);
-      }
-
-      // Fetch prescriptions
-      const { data: prescriptionData, error: prescriptionError } = await supabase
-        .from('prescriptions')
-        .select('*')
-        .eq('patient_id', patientId)
-        .order('prescribed_date', { ascending: false });
-
-      if (prescriptionError) {
-        console.error('Error fetching prescriptions:', prescriptionError);
-      } else {
-        setPrescriptions(prescriptionData || []);
+        setTreatments(treatmentsData || []);
       }
 
       // Fetch appointments
-      const { data: appointmentData, error: appointmentError } = await supabase
+      const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('appointments')
         .select('*')
         .eq('patient_id', patientId)
         .order('appointment_date', { ascending: false });
 
-      if (appointmentError) {
-        console.error('Error fetching appointments:', appointmentError);
+      if (appointmentsError) {
+        console.error('Error fetching appointments:', appointmentsError);
       } else {
-        setAppointments(appointmentData || []);
+        setAppointments(appointmentsData || []);
       }
-      
+
     } catch (error) {
-      console.error('Error fetching patient data:', error);
+      console.error('Error in fetchPatientData:', error);
       toast({
         title: "Error",
-        description: "Failed to load patient data. Please try again.",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!patient || !editedPatient) return;
+
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .update(editedPatient)
+        .eq('patient_id', patientId);
+
+      if (error) {
+        console.error('Error updating patient:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update patient information",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setPatient({ ...patient, ...editedPatient });
+      setIsEditing(false);
+      toast({
+        title: "Success",
+        description: "Patient information updated successfully",
+      });
+    } catch (error) {
+      console.error('Error in handleSaveChanges:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -104,11 +199,19 @@ const PatientRecord = () => {
     return age;
   };
 
-  const handleDownloadRecord = () => {
-    toast({
-      title: "Download Started",
-      description: "Downloading complete patient record...",
-    });
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'ongoing':
+        return 'bg-blue-100 text-blue-800';
+      case 'scheduled':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (isLoading) {
@@ -126,9 +229,13 @@ const PatientRecord = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Patient Not Found</h2>
-          <p className="text-slate-600">The requested patient record could not be found.</p>
+          <p className="text-xl text-slate-600">Patient not found</p>
+          <Button 
+            className="mt-4" 
+            onClick={() => navigate('/patient-search')}
+          >
+            Back to Search
+          </Button>
         </div>
       </div>
     );
@@ -139,248 +246,284 @@ const PatientRecord = () => {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
+          <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
               Patient Record
             </h1>
-            <p className="text-slate-600">Complete medical history and information</p>
+            <p className="text-slate-600">Complete medical record for {patient.full_name}</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={handleDownloadRecord}>
-              <Download className="w-4 h-4 mr-2" />
-              Download Record
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/in-patient-treatment?patient=${patient.patient_id}&name=${encodeURIComponent(patient.full_name)}`)}
+            >
+              <Stethoscope className="w-4 h-4 mr-2" />
+              New Treatment
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Patient
+            <Button
+              variant="outline"
+              onClick={() => navigate('/patient-search')}
+            >
+              Back to Search
             </Button>
           </div>
         </div>
 
-        {/* Patient Overview Card */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        {/* Patient Info Card */}
+        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
           <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                  <User className="w-8 h-8 text-blue-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl">
-                    {patient.full_name}
-                    {patient.patient_nickname && <span className="text-lg text-slate-500 ml-2">"{patient.patient_nickname}"</span>}
-                  </CardTitle>
-                  <CardDescription className="text-base">
-                    Patient ID: {patient.patient_id} • {calculateAge(patient.date_of_birth)} years • {patient.gender}
-                  </CardDescription>
-                  <div className="flex items-center gap-4 mt-2">
-                    <Badge className="bg-green-50 text-green-700 border-green-200">Active Patient</Badge>
-                    {patient.blood_group && (
-                      <Badge variant="outline" className="text-red-600 border-red-200">
-                        <Heart className="w-3 h-3 mr-1" />
-                        {patient.blood_group}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="text-right text-sm text-slate-600">
-                <div>Registered: {new Date(patient.created_at).toLocaleDateString()}</div>
-                <div>Last Updated: {new Date(patient.updated_at).toLocaleDateString()}</div>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5 text-blue-600" />
+                Patient Information
+              </CardTitle>
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={handleSaveChanges}>
+                      <Save className="w-4 h-4 mr-1" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      setIsEditing(false);
+                      setEditedPatient(patient);
+                    }}>
+                      <X className="w-4 h-4 mr-1" />
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+                    <Edit className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Full Name</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.full_name || ''}
+                    onChange={(e) => setEditedPatient(prev => ({ ...prev, full_name: e.target.value }))}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 font-semibold text-slate-900">{patient.full_name}</p>
+                )}
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Patient ID</Label>
+                <p className="mt-1 font-mono text-slate-900">{patient.patient_id}</p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Age</Label>
+                <p className="mt-1 text-slate-900">{calculateAge(patient.date_of_birth)} years</p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Gender</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.gender || ''}
+                    onChange={(e) => setEditedPatient(prev => ({ ...prev, gender: e.target.value }))}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-slate-900">{patient.gender}</p>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Mobile Number</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.mobile_number || ''}
+                    onChange={(e) => setEditedPatient(prev => ({ ...prev, mobile_number: e.target.value }))}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-slate-900 flex items-center gap-1">
+                    <Phone className="w-4 h-4" />
+                    {patient.mobile_number}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Email</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.email || ''}
+                    onChange={(e) => setEditedPatient(prev => ({ ...prev, email: e.target.value }))}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-slate-900 flex items-center gap-1">
+                    <Mail className="w-4 h-4" />
+                    {patient.email || 'Not provided'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Address</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.address || ''}
+                    onChange={(e) => setEditedPatient(prev => ({ ...prev, address: e.target.value }))}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-slate-900 flex items-start gap-1">
+                    <MapPin className="w-4 h-4 mt-0.5" />
+                    {patient.address}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Blood Group</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.blood_group || ''}
+                    onChange={(e) => setEditedPatient(prev => ({ ...prev, blood_group: e.target.value }))}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-slate-900">{patient.blood_group || 'Not specified'}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Medical Information */}
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Medical Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Allergies</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editedPatient.allergies || ''}
+                      onChange={(e) => setEditedPatient(prev => ({ ...prev, allergies: e.target.value }))}
+                      className="mt-1"
+                      placeholder="Any known allergies"
+                    />
+                  ) : (
+                    <p className="mt-1 text-slate-900">{patient.allergies || 'None reported'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Chronic Conditions</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editedPatient.chronic_conditions || ''}
+                      onChange={(e) => setEditedPatient(prev => ({ ...prev, chronic_conditions: e.target.value }))}
+                      className="mt-1"
+                      placeholder="Any chronic conditions"
+                    />
+                  ) : (
+                    <p className="mt-1 text-slate-900">{patient.chronic_conditions || 'None reported'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Emergency Contact</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editedPatient.emergency_contact || ''}
+                      onChange={(e) => setEditedPatient(prev => ({ ...prev, emergency_contact: e.target.value }))}
+                      className="mt-1"
+                      placeholder="Emergency contact details"
+                    />
+                  ) : (
+                    <p className="mt-1 text-slate-900">{patient.emergency_contact || 'Not provided'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Balance</Label>
+                  <p className="mt-1 text-slate-900 flex items-center gap-1">
+                    <DollarSign className="w-4 h-4" />
+                    ${patient.balance || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
         </Card>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
+        {/* Tabs for different sections */}
+        <Tabs defaultValue="treatments" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="treatments">Treatments</TabsTrigger>
-            <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
             <TabsTrigger value="appointments">Appointments</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Contact Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Phone className="w-5 h-5 text-blue-600" />
-                    Contact Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-slate-500" />
-                      <span>{patient.mobile_number}</span>
-                    </div>
-                    {patient.email && (
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-4 h-4 text-slate-500" />
-                        <span>{patient.email}</span>
-                      </div>
-                    )}
-                    <div className="pt-2">
-                      <Label className="font-medium text-slate-700">Address:</Label>
-                      <p className="text-slate-600 mt-1">{patient.address}</p>
-                    </div>
-                    {patient.emergency_contact && (
-                      <div className="pt-2">
-                        <Label className="font-medium text-slate-700">Emergency Contact:</Label>
-                        <p className="text-slate-600 mt-1">{patient.emergency_contact}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Medical Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    Medical Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="font-medium text-slate-700">Allergies:</Label>
-                      <p className="text-slate-600 mt-1">{patient.allergies || 'None reported'}</p>
-                    </div>
-                    <div>
-                      <Label className="font-medium text-slate-700">Chronic Conditions:</Label>
-                      <p className="text-slate-600 mt-1">{patient.chronic_conditions || 'None reported'}</p>
-                    </div>
-                    {patient.referred_by && (
-                      <div>
-                        <Label className="font-medium text-slate-700">Referred By:</Label>
-                        <p className="text-slate-600 mt-1">{patient.referred_by}</p>
-                      </div>
-                    )}
-                    {patient.insurance_details && (
-                      <div>
-                        <Label className="font-medium text-slate-700">Insurance:</Label>
-                        <p className="text-slate-600 mt-1">{patient.insurance_details}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="treatments">
-            <Card>
+          <TabsContent value="treatments" className="space-y-4">
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Stethoscope className="w-5 h-5 text-blue-600" />
-                  Treatment History
-                </CardTitle>
-                <CardDescription>
-                  {treatments.length} treatments recorded
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-blue-600" />
+                    Treatment History
+                  </CardTitle>
+                  <Button
+                    onClick={() => navigate(`/in-patient-treatment?patient=${patient.patient_id}&name=${encodeURIComponent(patient.full_name)}`)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Treatment
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {treatments.length === 0 ? (
                   <div className="text-center py-8 text-slate-500">
-                    <Stethoscope className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                    <p>No treatments recorded yet</p>
+                    <Activity className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                    <p>No treatments recorded yet.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {treatments.map((treatment) => (
-                      <div key={treatment.id} className="border rounded-lg p-4 hover:bg-slate-50">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className="bg-blue-100 text-blue-700">
-                                {treatment.treatment_status}
-                              </Badge>
-                              <span className="text-sm text-slate-500">
-                                {new Date(treatment.treatment_date).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <h4 className="font-medium text-slate-900 mb-2">
-                              {treatment.procedure_done}
-                            </h4>
-                            {treatment.teeth_involved && treatment.teeth_involved.length > 0 && (
-                              <p className="text-sm text-slate-600 mb-2">
-                                Teeth: {treatment.teeth_involved.join(', ')}
-                              </p>
-                            )}
-                            {treatment.notes && (
-                              <p className="text-sm text-slate-600">{treatment.notes}</p>
-                            )}
-                          </div>
-                          {treatment.treatment_cost && (
-                            <div className="text-right">
-                              <div className="font-medium text-green-600">
-                                ₹{treatment.treatment_cost.toLocaleString()}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="prescriptions">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Pill className="w-5 h-5 text-blue-600" />
-                  Prescription History
-                </CardTitle>
-                <CardDescription>
-                  {prescriptions.length} prescriptions issued
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {prescriptions.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    <Pill className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                    <p>No prescriptions issued yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {prescriptions.map((prescription) => (
-                      <div key={prescription.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-slate-900">
-                            {prescription.medication_name}
-                          </h4>
-                          <span className="text-sm text-slate-500">
-                            {new Date(prescription.prescribed_date).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <Label className="font-medium text-slate-700">Dosage:</Label>
-                            <p className="text-slate-600">{prescription.dosage}</p>
-                          </div>
-                          <div>
-                            <Label className="font-medium text-slate-700">Frequency:</Label>
-                            <p className="text-slate-600">{prescription.frequency}</p>
-                          </div>
-                          <div>
-                            <Label className="font-medium text-slate-700">Duration:</Label>
-                            <p className="text-slate-600">{prescription.duration}</p>
+                      <div key={treatment.id} className="p-4 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-slate-900">{treatment.procedure_done}</h4>
+                          <div className="flex items-center gap-2">
+                            <Badge className={getStatusColor(treatment.treatment_status)}>
+                              {treatment.treatment_status}
+                            </Badge>
+                            <span className="text-sm text-slate-500">{treatment.treatment_date}</span>
                           </div>
                         </div>
-                        {prescription.instructions && (
-                          <div className="mt-2">
-                            <Label className="font-medium text-slate-700">Instructions:</Label>
-                            <p className="text-slate-600 text-sm">{prescription.instructions}</p>
-                          </div>
+                        {treatment.materials_used && (
+                          <p className="text-sm text-slate-600 mb-1">
+                            <strong>Materials:</strong> {treatment.materials_used}
+                          </p>
+                        )}
+                        {treatment.treatment_cost && (
+                          <p className="text-sm text-slate-600 mb-1">
+                            <strong>Cost:</strong> ${treatment.treatment_cost}
+                          </p>
+                        )}
+                        {treatment.teeth_involved && treatment.teeth_involved.length > 0 && (
+                          <p className="text-sm text-slate-600 mb-1">
+                            <strong>Teeth:</strong> {treatment.teeth_involved.join(', ')}
+                          </p>
+                        )}
+                        {treatment.notes && (
+                          <p className="text-sm text-slate-600">
+                            <strong>Notes:</strong> {treatment.notes}
+                          </p>
                         )}
                       </div>
                     ))}
@@ -390,47 +533,43 @@ const PatientRecord = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="appointments">
-            <Card>
+          <TabsContent value="appointments" className="space-y-4">
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-blue-600" />
                   Appointment History
                 </CardTitle>
-                <CardDescription>
-                  {appointments.length} appointments scheduled
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {appointments.length === 0 ? (
                   <div className="text-center py-8 text-slate-500">
                     <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                    <p>No appointments scheduled yet</p>
+                    <p>No appointments scheduled yet.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {appointments.map((appointment) => (
-                      <div key={appointment.id} className="border rounded-lg p-4 flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className={
-                              appointment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                              appointment.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                              'bg-blue-100 text-blue-700'
-                            }>
-                              {appointment.status}
-                            </Badge>
-                            <span className="text-sm text-slate-500">
-                              {appointment.appointment_type}
+                      <div key={appointment.id} className="p-4 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-slate-500" />
+                            <span className="font-semibold">
+                              {appointment.appointment_date} at {appointment.appointment_time}
                             </span>
                           </div>
-                          <div className="font-medium text-slate-900">
-                            {new Date(appointment.appointment_date).toLocaleDateString()} at {appointment.appointment_time}
-                          </div>
-                          {appointment.notes && (
-                            <p className="text-sm text-slate-600 mt-1">{appointment.notes}</p>
-                          )}
+                          <Badge className={getStatusColor(appointment.status)}>
+                            {appointment.status}
+                          </Badge>
                         </div>
+                        <p className="text-sm text-slate-600">
+                          <strong>Type:</strong> {appointment.appointment_type}
+                        </p>
+                        {appointment.notes && (
+                          <p className="text-sm text-slate-600 mt-1">
+                            <strong>Notes:</strong> {appointment.notes}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -439,8 +578,25 @@ const PatientRecord = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="payments">
+          <TabsContent value="payments" className="space-y-4">
             <PaymentHistory patientId={patient.patient_id} />
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-4">
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Patient Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-slate-500">
+                  <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                  <p>Document management coming soon.</p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

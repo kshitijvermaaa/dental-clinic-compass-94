@@ -1,166 +1,161 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Stethoscope, Calendar as CalendarIcon, Save, FileText, Upload } from 'lucide-react';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { VisualTeethSelector } from '@/components/appointments/VisualTeethSelector';
-import { UserCheck, Stethoscope, FileText, Calendar, Clock, TestTube, AlertTriangle, Save } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { EnhancedTeethSelector } from '@/components/appointments/EnhancedTeethSelector';
 
-interface ToothSelection {
-  tooth: string;
-  parts: string[];
-}
-
-interface InPatientTreatmentProps {
-  patientId?: string;
-  patientName?: string;
-  visitType?: 'appointment' | 'first-visit' | 'emergency';
-}
-
-export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
-  patientId = '',
-  patientName = '',
-  visitType = 'appointment'
-}) => {
+export const InPatientTreatment: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedTeeth, setSelectedTeeth] = useState<ToothSelection[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const patientId = searchParams.get('patient');
+  const patientName = searchParams.get('name');
+  const treatmentType = searchParams.get('type');
+
   const [treatmentData, setTreatmentData] = useState({
-    visitDate: new Date().toISOString().split('T')[0],
-    visitTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
-    chiefComplaint: '',
-    clinicalFindings: '',
-    diagnosis: '',
-    treatmentPerformed: '',
-    medicationsPrescribed: '',
-    testsRecommended: '',
-    followUpInstructions: '',
-    nextAppointmentRequired: false,
-    nextAppointmentDate: '',
-    nextAppointmentTime: '',
-    nextAppointmentPurpose: '',
-    painLevel: '',
-    treatmentStatus: 'ongoing',
-    treatmentCost: '',
-    materialsUsed: ''
+    procedure_done: '',
+    materials_used: '',
+    notes: '',
+    treatment_cost: '',
+    teeth_involved: [] as string[],
+    treatment_status: 'ongoing' as 'ongoing' | 'completed' | 'paused'
   });
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setTreatmentData(prev => ({ ...prev, [field]: value }));
+  const [nextAppointmentDate, setNextAppointmentDate] = useState<Date>();
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleInputChange = (field: string, value: string) => {
+    setTreatmentData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      setDocuments(Array.from(files));
+    }
+  };
+
+  const uploadDocuments = async (treatmentId: string) => {
+    if (documents.length === 0) return;
+
+    try {
+      for (const file of documents) {
+        const fileName = `${treatmentId}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage
+          .from('treatment-documents')
+          .upload(fileName, file);
+
+        if (error) {
+          console.error('Error uploading file:', error);
+          toast({
+            title: "Upload Warning",
+            description: `Failed to upload ${file.name}`,
+            variant: "destructive",
+          });
+        }
+      }
+
+      toast({
+        title: "Documents Uploaded",
+        description: `${documents.length} document(s) uploaded successfully`,
+      });
+    } catch (error) {
+      console.error('Error in uploadDocuments:', error);
+    }
   };
 
   const handleSaveTreatment = async () => {
-    if (!patientId) {
+    if (!patientId || !treatmentData.procedure_done) {
       toast({
         title: "Error",
-        description: "Patient ID is required to save treatment.",
+        description: "Patient ID and procedure are required",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-    
     try {
-      // Save treatment record
-      const { data: treatmentRecord, error: treatmentError } = await supabase
+      // Save treatment
+      const { data: treatment, error: treatmentError } = await supabase
         .from('treatments')
         .insert({
           patient_id: patientId,
-          treatment_date: treatmentData.visitDate,
-          procedure_done: treatmentData.treatmentPerformed,
-          teeth_involved: selectedTeeth.map(t => `${t.tooth}(${t.parts.join(',')})`),
-          materials_used: treatmentData.materialsUsed,
-          notes: `Chief Complaint: ${treatmentData.chiefComplaint}\n\nClinical Findings: ${treatmentData.clinicalFindings}\n\nDiagnosis: ${treatmentData.diagnosis}\n\nFollow-up Instructions: ${treatmentData.followUpInstructions}`,
-          treatment_cost: treatmentData.treatmentCost ? parseFloat(treatmentData.treatmentCost) : null,
-          treatment_status: treatmentData.treatmentStatus as 'ongoing' | 'completed' | 'cancelled',
-          next_appointment_date: treatmentData.nextAppointmentRequired ? treatmentData.nextAppointmentDate : null
+          procedure_done: treatmentData.procedure_done,
+          materials_used: treatmentData.materials_used || null,
+          notes: treatmentData.notes || null,
+          treatment_cost: treatmentData.treatment_cost ? parseFloat(treatmentData.treatment_cost) : null,
+          teeth_involved: treatmentData.teeth_involved.length > 0 ? treatmentData.teeth_involved : null,
+          treatment_date: new Date().toISOString().split('T')[0],
+          treatment_status: treatmentData.treatment_status,
+          next_appointment_date: nextAppointmentDate ? format(nextAppointmentDate, 'yyyy-MM-dd') : null
         })
         .select()
         .single();
 
       if (treatmentError) {
-        console.error('Error creating treatment:', treatmentError);
+        console.error('Treatment error:', treatmentError);
         throw treatmentError;
       }
 
-      // Save prescription if medications are prescribed
-      if (treatmentData.medicationsPrescribed.trim()) {
-        const { error: prescriptionError } = await supabase
-          .from('prescriptions')
-          .insert({
-            patient_id: patientId,
-            treatment_id: treatmentRecord.id,
-            medication_name: treatmentData.medicationsPrescribed,
-            dosage: 'As prescribed',
-            frequency: 'As directed',
-            duration: 'As directed',
-            instructions: `Pain Level: ${treatmentData.painLevel}/10\n\nTests Recommended: ${treatmentData.testsRecommended}`,
-            prescribed_date: treatmentData.visitDate
-          });
-
-        if (prescriptionError) {
-          console.error('Error creating prescription:', prescriptionError);
-        }
-      }
-
-      // Create next appointment if required
-      if (treatmentData.nextAppointmentRequired && treatmentData.nextAppointmentDate && treatmentData.nextAppointmentTime) {
+      // Create next appointment if date is selected
+      if (nextAppointmentDate && treatment) {
         const { error: appointmentError } = await supabase
           .from('appointments')
           .insert({
             patient_id: patientId,
-            appointment_date: treatmentData.nextAppointmentDate,
-            appointment_time: treatmentData.nextAppointmentTime,
-            appointment_type: treatmentData.nextAppointmentPurpose === 'follow-up' ? 'followup' : 'regular',
+            appointment_date: format(nextAppointmentDate, 'yyyy-MM-dd'),
+            appointment_time: '10:00:00',
+            appointment_type: 'followup',
             status: 'scheduled',
-            notes: `Follow-up for: ${treatmentData.treatmentPerformed}`
+            notes: `Follow-up for: ${treatmentData.procedure_done}`
           });
 
         if (appointmentError) {
-          console.error('Error creating appointment:', appointmentError);
+          console.error('Appointment error:', appointmentError);
+          toast({
+            title: "Warning",
+            description: "Treatment saved but failed to create appointment",
+            variant: "destructive",
+          });
         }
       }
 
+      // Upload documents
+      if (treatment && documents.length > 0) {
+        await uploadDocuments(treatment.id);
+      }
+
       toast({
-        title: "Treatment Record Saved! ✅",
-        description: `Treatment details for ${patientName} have been successfully recorded.`,
+        title: "Success",
+        description: "Treatment recorded successfully",
       });
 
-      // Reset form
-      setTreatmentData({
-        visitDate: new Date().toISOString().split('T')[0],
-        visitTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
-        chiefComplaint: '',
-        clinicalFindings: '',
-        diagnosis: '',
-        treatmentPerformed: '',
-        medicationsPrescribed: '',
-        testsRecommended: '',
-        followUpInstructions: '',
-        nextAppointmentRequired: false,
-        nextAppointmentDate: '',
-        nextAppointmentTime: '',
-        nextAppointmentPurpose: '',
-        painLevel: '',
-        treatmentStatus: 'ongoing',
-        treatmentCost: '',
-        materialsUsed: ''
-      });
-      setSelectedTeeth([]);
+      // Navigate back or to patient record
+      navigate(`/patient-record?patient=${patientId}`);
 
     } catch (error) {
-      console.error('Unexpected error saving treatment:', error);
+      console.error('Error saving treatment:', error);
       toast({
         title: "Error",
-        description: "Failed to save treatment record. Please try again.",
+        description: "Failed to save treatment. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -168,284 +163,181 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
     }
   };
 
-  const getVisitTypeInfo = () => {
-    switch (visitType) {
-      case 'first-visit':
-        return { icon: UserCheck, label: 'First Visit', color: 'bg-green-100 text-green-700' };
-      case 'emergency':
-        return { icon: AlertTriangle, label: 'Emergency Visit', color: 'bg-red-100 text-red-700' };
-      default:
-        return { icon: Calendar, label: 'Scheduled Appointment', color: 'bg-blue-100 text-blue-700' };
-    }
-  };
-
-  const visitInfo = getVisitTypeInfo();
-  const VisitIcon = visitInfo.icon;
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <VisitIcon className="w-6 h-6 text-blue-600" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+              In-Patient Treatment
+            </h1>
+            <p className="text-slate-600 mt-1">
+              Recording treatment for: <span className="font-semibold">{patientName || 'Unknown Patient'}</span>
+              {treatmentType && <Badge className="ml-2">{treatmentType}</Badge>}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dashboard')}
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+
+        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Stethoscope className="w-5 h-5 text-blue-600" />
+              Treatment Details
+            </CardTitle>
+            <CardDescription>
+              Record the treatment procedure and relevant information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="procedure">Procedure Done *</Label>
+                <Input
+                  id="procedure"
+                  placeholder="e.g., Root Canal Treatment, Extraction, Cleaning"
+                  value={treatmentData.procedure_done}
+                  onChange={(e) => handleInputChange('procedure_done', e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="cost">Treatment Cost</Label>
+                <Input
+                  id="cost"
+                  type="number"
+                  placeholder="0.00"
+                  value={treatmentData.treatment_cost}
+                  onChange={(e) => handleInputChange('treatment_cost', e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+
             <div>
-              <div className="text-xl">In-Patient Treatment Record</div>
-              <div className="text-sm text-slate-600 flex items-center gap-2 mt-1">
-                Patient: {patientName || 'Unknown'} ({patientId || 'No ID'})
-                <Badge className={visitInfo.color}>
-                  {visitInfo.label}
-                </Badge>
-              </div>
-            </div>
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
-      {/* Visit Details */}
-      <Card className="border-2 border-blue-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-600" />
-            Visit Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="visit-date">Visit Date</Label>
-            <Input
-              id="visit-date"
-              type="date"
-              value={treatmentData.visitDate}
-              onChange={(e) => handleInputChange('visitDate', e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="visit-time">Visit Time</Label>
-            <Input
-              id="visit-time"
-              type="time"
-              value={treatmentData.visitTime}
-              onChange={(e) => handleInputChange('visitTime', e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pain-level">Pain Level (1-10)</Label>
-            <Select value={treatmentData.painLevel} onValueChange={(value) => handleInputChange('painLevel', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Rate pain" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({length: 10}, (_, i) => (
-                  <SelectItem key={i+1} value={(i+1).toString()}>
-                    {i+1} {i === 0 && '(No Pain)'} {i === 4 && '(Moderate)'} {i === 9 && '(Severe)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="treatment-cost">Treatment Cost (₹)</Label>
-            <Input
-              id="treatment-cost"
-              type="number"
-              value={treatmentData.treatmentCost}
-              onChange={(e) => handleInputChange('treatmentCost', e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Clinical Assessment */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-slate-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Stethoscope className="w-5 h-5 text-purple-600" />
-            Clinical Assessment
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="chief-complaint">Chief Complaint</Label>
-            <Textarea
-              id="chief-complaint"
-              placeholder="What is the patient's main concern or complaint?"
-              value={treatmentData.chiefComplaint}
-              onChange={(e) => handleInputChange('chiefComplaint', e.target.value)}
-              className="min-h-[80px]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="clinical-findings">Clinical Findings & Examination</Label>
-            <Textarea
-              id="clinical-findings"
-              placeholder="Describe what you observed during the examination"
-              value={treatmentData.clinicalFindings}
-              onChange={(e) => handleInputChange('clinicalFindings', e.target.value)}
-              className="min-h-[100px]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="diagnosis">Diagnosis</Label>
-            <Textarea
-              id="diagnosis"
-              placeholder="Your professional diagnosis based on findings"
-              value={treatmentData.diagnosis}
-              onChange={(e) => handleInputChange('diagnosis', e.target.value)}
-              className="min-h-[80px]"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Teeth Selector */}
-      <VisualTeethSelector 
-        selectedTeeth={selectedTeeth} 
-        onTeethChange={setSelectedTeeth} 
-      />
-
-      {/* Treatment & Recommendations */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-slate-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-green-600" />
-            Treatment & Recommendations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="treatment-performed">Treatment Performed Today</Label>
-            <Textarea
-              id="treatment-performed"
-              placeholder="Describe the treatment provided during this visit"
-              value={treatmentData.treatmentPerformed}
-              onChange={(e) => handleInputChange('treatmentPerformed', e.target.value)}
-              className="min-h-[100px]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="materials-used">Materials Used</Label>
-            <Textarea
-              id="materials-used"
-              placeholder="List materials and equipment used"
-              value={treatmentData.materialsUsed}
-              onChange={(e) => handleInputChange('materialsUsed', e.target.value)}
-              className="min-h-[60px]"
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="medications" className="flex items-center gap-2">
-                <TestTube className="w-4 h-4 text-orange-500" />
-                Medications Prescribed
-              </Label>
-              <Textarea
-                id="medications"
-                placeholder="List medications, dosage, and instructions"
-                value={treatmentData.medicationsPrescribed}
-                onChange={(e) => handleInputChange('medicationsPrescribed', e.target.value)}
-                className="min-h-[80px]"
+              <Label htmlFor="materials">Materials Used</Label>
+              <Input
+                id="materials"
+                placeholder="e.g., Amalgam, Composite, Local Anesthesia"
+                value={treatmentData.materials_used}
+                onChange={(e) => handleInputChange('materials_used', e.target.value)}
+                className="mt-2"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tests-recommended">Tests/X-rays Recommended</Label>
+
+            <div>
+              <Label>Treatment Status</Label>
+              <Select
+                value={treatmentData.treatment_status}
+                onValueChange={(value: 'ongoing' | 'completed' | 'paused') => 
+                  handleInputChange('treatment_status', value)
+                }
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ongoing">Ongoing</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Teeth Involved</Label>
+              <div className="mt-2">
+                <EnhancedTeethSelector
+                  selectedTeeth={treatmentData.teeth_involved}
+                  onSelectionChange={(teeth) => handleInputChange('teeth_involved', '')}
+                  onTeethChange={(teeth) => setTreatmentData(prev => ({ ...prev, teeth_involved: teeth }))}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="notes">Treatment Notes</Label>
               <Textarea
-                id="tests-recommended"
-                placeholder="Any additional tests or imaging required"
-                value={treatmentData.testsRecommended}
-                onChange={(e) => handleInputChange('testsRecommended', e.target.value)}
-                className="min-h-[80px]"
+                id="notes"
+                placeholder="Additional notes about the treatment..."
+                value={treatmentData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                className="mt-2"
+                rows={4}
               />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="follow-up-instructions">Follow-up Instructions</Label>
-            <Textarea
-              id="follow-up-instructions"
-              placeholder="Care instructions, what to avoid, when to return, etc."
-              value={treatmentData.followUpInstructions}
-              onChange={(e) => handleInputChange('followUpInstructions', e.target.value)}
-              className="min-h-[80px]"
-            />
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Next Appointment (Optional) */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-orange-50 to-slate-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-orange-600" />
-            Next Appointment (Optional)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-3 p-3 bg-orange-100 rounded-lg">
-            <Checkbox 
-              id="next-appointment" 
-              checked={treatmentData.nextAppointmentRequired}
-              onCheckedChange={(checked) => handleInputChange('nextAppointmentRequired', checked)}
-            />
-            <Label htmlFor="next-appointment" className="text-sm font-medium">
-              Schedule next appointment
-            </Label>
-          </div>
-          
-          {treatmentData.nextAppointmentRequired && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="next-date">Next Appointment Date</Label>
+            <div>
+              <Label htmlFor="documents">Upload Documents</Label>
+              <div className="mt-2 flex items-center gap-4">
                 <Input
-                  id="next-date"
-                  type="date"
-                  value={treatmentData.nextAppointmentDate}
-                  onChange={(e) => handleInputChange('nextAppointmentDate', e.target.value)}
+                  id="documents"
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={handleFileUpload}
+                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                <Upload className="w-4 h-4 text-slate-400" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="next-time">Time</Label>
-                <Input
-                  id="next-time"
-                  type="time"
-                  value={treatmentData.nextAppointmentTime}
-                  onChange={(e) => handleInputChange('nextAppointmentTime', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="next-purpose">Purpose</Label>
-                <Select 
-                  value={treatmentData.nextAppointmentPurpose} 
-                  onValueChange={(value) => handleInputChange('nextAppointmentPurpose', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Purpose" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="follow-up">Follow-up Check</SelectItem>
-                    <SelectItem value="continue-treatment">Continue Treatment</SelectItem>
-                    <SelectItem value="test-results">Review Test Results</SelectItem>
-                    <SelectItem value="crown-fitting">Crown Fitting</SelectItem>
-                    <SelectItem value="cleaning">Regular Cleaning</SelectItem>
-                    <SelectItem value="adjustment">Adjustment</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {documents.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-slate-600">
+                    {documents.length} file(s) selected: {documents.map(f => f.name).join(', ')}
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Save Button */}
-      <div className="flex justify-center pt-4">
-        <Button 
-          onClick={handleSaveTreatment} 
-          className="bg-blue-600 hover:bg-blue-700 px-8 py-3 text-lg"
-          disabled={isLoading}
-        >
-          <Save className="w-5 h-5 mr-2" />
-          {isLoading ? 'Saving...' : 'Save Treatment Record'}
-        </Button>
+            <div>
+              <Label>Next Appointment Date (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-2 justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {nextAppointmentDate ? format(nextAppointmentDate, 'PPP') : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={nextAppointmentDate}
+                    onSelect={setNextAppointmentDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <Button
+                onClick={handleSaveTreatment}
+                disabled={isLoading || !treatmentData.procedure_done}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Saving...' : 'Save Treatment'}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/patient-record?patient=${patientId}`)}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                View Patient Record
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -40,10 +40,11 @@ const Appointments = () => {
   };
 
   const filteredAppointments = appointments.filter(appointment =>
-    appointment.patients?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.patients?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     appointment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    appointment.patients?.mobile_number.includes(searchTerm) ||
-    appointment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+    appointment.patients?.mobile_number?.includes(searchTerm) ||
+    appointment.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.patient_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleViewPatient = (patientId: string) => {
@@ -56,13 +57,14 @@ const Appointments = () => {
   };
 
   const handleReschedule = (appointment: any) => {
+    console.log('Rescheduling appointment:', appointment);
     setSelectedAppointment({
       id: appointment.id,
-      patientName: appointment.patients?.full_name,
+      patientName: appointment.patients?.full_name || 'Unknown Patient',
       patientId: appointment.patient_id,
       currentDate: new Date(appointment.appointment_date),
       currentTime: appointment.appointment_time,
-      reason: appointment.notes
+      reason: appointment.notes || appointment.appointment_type
     });
     setShowReschedule(true);
   };
@@ -112,14 +114,14 @@ const Appointments = () => {
 
         <Tabs defaultValue="appointments" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="appointments">Today's Appointments</TabsTrigger>
+            <TabsTrigger value="appointments">All Appointments</TabsTrigger>
             <TabsTrigger value="holidays">Holiday Calendar</TabsTrigger>
             <TabsTrigger value="closure">Emergency Closure</TabsTrigger>
             <TabsTrigger value="reschedule">Reschedule</TabsTrigger>
           </TabsList>
           
           <TabsContent value="appointments" className="space-y-4">
-            {/* Today's Schedule */}
+            {/* All Appointments */}
             <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -156,7 +158,7 @@ const Appointments = () => {
                         <div>
                           <div className="flex items-center gap-3">
                             <span className="font-semibold text-slate-900">{appointment.patients?.full_name || 'Unknown Patient'}</span>
-                            <span className="text-sm text-slate-500">({appointment.patient_id.slice(0, 8)}...)</span>
+                            <span className="text-sm text-slate-500">({appointment.patients?.patient_id || appointment.patient_id})</span>
                             <span className="text-sm font-mono text-slate-600">{appointment.appointment_time}</span>
                           </div>
                           <div className="mt-1 text-sm text-slate-600">
@@ -238,7 +240,7 @@ const Appointments = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">
-                  Click the reschedule button next to any appointment in the "Today's Appointments" tab to reschedule it, 
+                  Click the reschedule button next to any appointment in the "All Appointments" tab to reschedule it, 
                   or use the "Emergency Closure" tab to handle multiple appointments at once.
                 </p>
               </CardContent>
@@ -266,7 +268,6 @@ const Appointments = () => {
           appointment={selectedAppointment}
           open={showReschedule}
           onOpenChange={setShowReschedule}
-          onReschedule={() => {}}
         />
       )}
     </div>

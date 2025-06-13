@@ -3,13 +3,15 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, User, Phone, Calendar, Stethoscope } from 'lucide-react';
+import { Clock, User, Phone, Calendar, Stethoscope, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppointments } from '@/hooks/useAppointments';
+import { useToast } from '@/hooks/use-toast';
 
 export const TodaysAppointments: React.FC = () => {
   const navigate = useNavigate();
-  const { appointments, isLoading } = useAppointments();
+  const { appointments, isLoading, updateAppointment } = useAppointments();
+  const { toast } = useToast();
 
   const today = new Date().toISOString().split('T')[0];
   const todaysAppointments = appointments.filter(apt => apt.appointment_date === today);
@@ -31,6 +33,23 @@ export const TodaysAppointments: React.FC = () => {
 
   const handleRecordTreatment = (appointment: any) => {
     navigate(`/in-patient-treatment?patient=${appointment.patient_id}&name=${encodeURIComponent(appointment.patients?.full_name || 'Unknown')}&type=appointment`);
+  };
+
+  const handleMarkComplete = async (appointment: any) => {
+    try {
+      await updateAppointment(appointment.id, { status: 'completed' });
+      toast({
+        title: "Success",
+        description: `Appointment for ${appointment.patients?.full_name} marked as completed`,
+      });
+    } catch (error) {
+      console.error('Error marking appointment as complete:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update appointment status",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -104,15 +123,38 @@ export const TodaysAppointments: React.FC = () => {
                   <Badge className={getStatusColor(appointment.status)}>
                     {appointment.status}
                   </Badge>
-                  {appointment.status !== 'completed' && (
+                  {appointment.status === 'scheduled' && (
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleMarkComplete(appointment)}
+                        className="text-green-600 border-green-200 hover:bg-green-50"
+                        title="Mark as Complete"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Complete
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => handleRecordTreatment(appointment)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        title="Record Treatment"
+                      >
+                        <Stethoscope className="w-4 h-4 mr-1" />
+                        Record Treatment
+                      </Button>
+                    </div>
+                  )}
+                  {appointment.status === 'completed' && (
                     <Button 
                       size="sm"
+                      variant="outline"
                       onClick={() => handleRecordTreatment(appointment)}
-                      className="bg-blue-600 hover:bg-blue-700"
-                      title="Record Treatment"
+                      title="Add Treatment Notes"
                     >
                       <Stethoscope className="w-4 h-4 mr-1" />
-                      Record Treatment
+                      Add Notes
                     </Button>
                   )}
                 </div>

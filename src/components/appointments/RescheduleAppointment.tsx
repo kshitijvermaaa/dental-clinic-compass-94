@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CalendarIcon, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useAppointments } from '@/hooks/useAppointments';
 
 interface Appointment {
   id: string;
@@ -27,9 +28,9 @@ interface RescheduleAppointmentProps {
 }
 
 const timeSlots = [
-  '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-  '12:00 PM', '12:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM',
-  '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM'
+  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+  '12:00', '12:30', '14:00', '14:30', '15:00', '15:30',
+  '16:00', '16:30', '17:00', '17:30'
 ];
 
 export const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
@@ -42,8 +43,9 @@ export const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
   const [newTime, setNewTime] = useState<string>('');
   const [reason, setReason] = useState('');
   const { toast } = useToast();
+  const { updateAppointment } = useAppointments();
 
-  const handleReschedule = () => {
+  const handleReschedule = async () => {
     if (!newDate || !newTime) {
       toast({
         title: "Error",
@@ -53,17 +55,31 @@ export const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
       return;
     }
 
-    onReschedule?.(appointment.id, newDate, newTime);
-    
-    toast({
-      title: "Appointment Rescheduled",
-      description: `${appointment.patientName}'s appointment has been moved to ${format(newDate, 'PPP')} at ${newTime}`,
-    });
-    
-    onOpenChange(false);
-    setNewDate(undefined);
-    setNewTime('');
-    setReason('');
+    try {
+      await updateAppointment(appointment.id, {
+        appointment_date: format(newDate, 'yyyy-MM-dd'),
+        appointment_time: newTime + ':00',
+        status: 'rescheduled',
+        notes: reason || `Rescheduled from ${format(appointment.currentDate, 'PPP')} at ${appointment.currentTime}`
+      });
+
+      toast({
+        title: "Appointment Rescheduled",
+        description: `${appointment.patientName}'s appointment has been moved to ${format(newDate, 'PPP')} at ${newTime}`,
+      });
+      
+      onOpenChange(false);
+      setNewDate(undefined);
+      setNewTime('');
+      setReason('');
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reschedule appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isWeekend = (date: Date) => {
