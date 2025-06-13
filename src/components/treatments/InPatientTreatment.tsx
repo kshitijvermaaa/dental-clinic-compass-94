@@ -16,21 +16,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { EnhancedTeethSelector } from '@/components/appointments/EnhancedTeethSelector';
 
-export const InPatientTreatment: React.FC = () => {
-  const [searchParams] = useSearchParams();
+interface ToothSelection {
+  tooth: string;
+  parts: string[];
+}
+
+interface InPatientTreatmentProps {
+  patientId: string;
+  patientName: string;
+  visitType: 'appointment' | 'first-visit' | 'emergency';
+}
+
+export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({ 
+  patientId, 
+  patientName, 
+  visitType 
+}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const patientId = searchParams.get('patient');
-  const patientName = searchParams.get('name');
-  const treatmentType = searchParams.get('type');
-
   const [treatmentData, setTreatmentData] = useState({
     procedure_done: '',
     materials_used: '',
     notes: '',
     treatment_cost: '',
-    teeth_involved: [] as string[],
+    teeth_involved: [] as ToothSelection[],
     treatment_status: 'ongoing' as 'ongoing' | 'completed' | 'paused'
   });
 
@@ -93,6 +103,11 @@ export const InPatientTreatment: React.FC = () => {
 
     setIsLoading(true);
     try {
+      // Convert ToothSelection[] to string[] for database storage
+      const teethInvolvedStrings = treatmentData.teeth_involved.map(selection => 
+        `${selection.tooth}:${selection.parts.join(',')}`
+      );
+
       // Save treatment
       const { data: treatment, error: treatmentError } = await supabase
         .from('treatments')
@@ -102,7 +117,7 @@ export const InPatientTreatment: React.FC = () => {
           materials_used: treatmentData.materials_used || null,
           notes: treatmentData.notes || null,
           treatment_cost: treatmentData.treatment_cost ? parseFloat(treatmentData.treatment_cost) : null,
-          teeth_involved: treatmentData.teeth_involved.length > 0 ? treatmentData.teeth_involved : null,
+          teeth_involved: teethInvolvedStrings.length > 0 ? teethInvolvedStrings : null,
           treatment_date: new Date().toISOString().split('T')[0],
           treatment_status: treatmentData.treatment_status,
           next_appointment_date: nextAppointmentDate ? format(nextAppointmentDate, 'yyyy-MM-dd') : null
@@ -173,7 +188,7 @@ export const InPatientTreatment: React.FC = () => {
             </h1>
             <p className="text-slate-600 mt-1">
               Recording treatment for: <span className="font-semibold">{patientName || 'Unknown Patient'}</span>
-              {treatmentType && <Badge className="ml-2">{treatmentType}</Badge>}
+              {visitType && <Badge className="ml-2">{visitType}</Badge>}
             </p>
           </div>
           <Button
@@ -255,7 +270,6 @@ export const InPatientTreatment: React.FC = () => {
               <div className="mt-2">
                 <EnhancedTeethSelector
                   selectedTeeth={treatmentData.teeth_involved}
-                  onSelectionChange={(teeth) => handleInputChange('teeth_involved', '')}
                   onTeethChange={(teeth) => setTreatmentData(prev => ({ ...prev, teeth_involved: teeth }))}
                 />
               </div>
