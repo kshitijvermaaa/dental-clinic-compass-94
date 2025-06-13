@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Stethoscope, Calendar as CalendarIcon, Save, FileText, Upload } from 'lucide-react';
+import { Stethoscope, Calendar as CalendarIcon, Save, FileText, Upload, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { EnhancedTeethSelector } from '@/components/appointments/EnhancedTeethSelector';
+import { VisualTeethSelector } from '@/components/appointments/VisualTeethSelector';
 
 interface ToothSelection {
   tooth: string;
@@ -179,149 +179,213 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-              In-Patient Treatment
-            </h1>
-            <p className="text-slate-600 mt-1">
-              Recording treatment for: <span className="font-semibold">{patientName || 'Unknown Patient'}</span>
-              {visitType && <Badge className="ml-2">{visitType}</Badge>}
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 md:p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Enhanced Header */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-2xl">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">
+                  In-Patient Treatment
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <p className="text-blue-100">
+                    Recording treatment for: <span className="font-semibold text-white">{patientName || 'Unknown Patient'}</span>
+                  </p>
+                  {visitType && (
+                    <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                      {visitType.replace('-', ' ').toUpperCase()}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/dashboard')}
+                className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
+              >
+                Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/patient-record?patient=${patientId}`)}
+                className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Patient Record
+              </Button>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate('/dashboard')}
-          >
-            Back to Dashboard
-          </Button>
         </div>
 
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Stethoscope className="w-5 h-5 text-blue-600" />
+        {/* Main Treatment Form */}
+        <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-t-lg">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <Stethoscope className="w-5 h-5 text-white" />
+              </div>
               Treatment Details
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-slate-600">
               Record the treatment procedure and relevant information
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="procedure">Procedure Done *</Label>
+          <CardContent className="p-6 space-y-8">
+            {/* Basic Information Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="procedure" className="text-sm font-semibold text-slate-700">
+                  Procedure Done *
+                </Label>
                 <Input
                   id="procedure"
                   placeholder="e.g., Root Canal Treatment, Extraction, Cleaning"
                   value={treatmentData.procedure_done}
                   onChange={(e) => handleInputChange('procedure_done', e.target.value)}
-                  className="mt-2"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="cost">Treatment Cost</Label>
+              <div className="space-y-3">
+                <Label htmlFor="cost" className="text-sm font-semibold text-slate-700">
+                  Treatment Cost
+                </Label>
                 <Input
                   id="cost"
                   type="number"
                   placeholder="0.00"
                   value={treatmentData.treatment_cost}
                   onChange={(e) => handleInputChange('treatment_cost', e.target.value)}
-                  className="mt-2"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="materials" className="text-sm font-semibold text-slate-700">
+                  Materials Used
+                </Label>
+                <Input
+                  id="materials"
+                  placeholder="e.g., Amalgam, Composite, Local Anesthesia"
+                  value={treatmentData.materials_used}
+                  onChange={(e) => handleInputChange('materials_used', e.target.value)}
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-slate-700">Treatment Status</Label>
+                <Select
+                  value={treatmentData.treatment_status}
+                  onValueChange={(value: 'ongoing' | 'completed' | 'paused') => 
+                    handleInputChange('treatment_status', value)
+                  }
+                >
+                  <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ongoing">Ongoing</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="materials">Materials Used</Label>
-              <Input
-                id="materials"
-                placeholder="e.g., Amalgam, Composite, Local Anesthesia"
-                value={treatmentData.materials_used}
-                onChange={(e) => handleInputChange('materials_used', e.target.value)}
-                className="mt-2"
-              />
-            </div>
-
-            <div>
-              <Label>Treatment Status</Label>
-              <Select
-                value={treatmentData.treatment_status}
-                onValueChange={(value: 'ongoing' | 'completed' | 'paused') => 
-                  handleInputChange('treatment_status', value)
-                }
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ongoing">Ongoing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Teeth Involved</Label>
-              <div className="mt-2">
-                <EnhancedTeethSelector
+            {/* Visual Teeth Selector */}
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold text-slate-700">
+                Teeth Involved (Visual Selection)
+              </Label>
+              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-4">
+                <VisualTeethSelector
                   selectedTeeth={treatmentData.teeth_involved}
                   onTeethChange={(teeth) => setTreatmentData(prev => ({ ...prev, teeth_involved: teeth }))}
                 />
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="notes">Treatment Notes</Label>
+            {/* Treatment Notes */}
+            <div className="space-y-3">
+              <Label htmlFor="notes" className="text-sm font-semibold text-slate-700">
+                Treatment Notes & Observations
+              </Label>
               <Textarea
                 id="notes"
-                placeholder="Additional notes about the treatment..."
+                placeholder="Describe the treatment procedure, patient's condition, any complications, medications prescribed..."
                 value={treatmentData.notes}
                 onChange={(e) => handleInputChange('notes', e.target.value)}
-                className="mt-2"
-                rows={4}
+                className="min-h-[120px] border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                rows={5}
               />
             </div>
 
-            <div>
-              <Label htmlFor="documents">Upload Documents</Label>
-              <div className="mt-2 flex items-center gap-4">
-                <Input
-                  id="documents"
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  onChange={handleFileUpload}
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                <Upload className="w-4 h-4 text-slate-400" />
+            {/* Document Upload */}
+            <div className="space-y-3">
+              <Label htmlFor="documents" className="text-sm font-semibold text-slate-700">
+                Upload Treatment Documents
+              </Label>
+              <div className="flex items-center gap-4 p-4 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/50 hover:border-blue-400 transition-colors">
+                <Upload className="w-6 h-6 text-slate-400" />
+                <div className="flex-1">
+                  <Input
+                    id="documents"
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={handleFileUpload}
+                    className="border-0 bg-transparent p-0 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                  />
+                </div>
               </div>
               {documents.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm text-slate-600">
-                    {documents.length} file(s) selected: {documents.map(f => f.name).join(', ')}
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium">
+                    📁 {documents.length} file(s) selected:
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {documents.map(f => f.name).join(', ')}
                   </p>
                 </div>
               )}
             </div>
 
-            <div>
-              <Label>Next Appointment Date (Optional)</Label>
+            {/* Next Appointment Scheduling */}
+            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6 border border-orange-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-orange-500 rounded-lg">
+                  <CalendarIcon className="w-5 h-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-slate-800">Schedule Next Appointment (Optional)</h4>
+              </div>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full mt-2 justify-start text-left font-normal"
+                    className="w-full justify-start text-left font-normal border-orange-300 hover:border-orange-400 hover:bg-orange-50"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {nextAppointmentDate ? format(nextAppointmentDate, 'PPP') : 'Select date'}
+                    {nextAppointmentDate ? format(nextAppointmentDate, 'PPP') : 'Select appointment date'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={nextAppointmentDate}
@@ -332,21 +396,25 @@ export const InPatientTreatment: React.FC<InPatientTreatmentProps> = ({
               </Popover>
             </div>
 
-            <div className="flex gap-4 pt-4">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-200">
               <Button
                 onClick={handleSaveTreatment}
                 disabled={isLoading || !treatmentData.procedure_done}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 py-3"
+                size="lg"
               >
-                <Save className="w-4 h-4 mr-2" />
-                {isLoading ? 'Saving...' : 'Save Treatment'}
+                <Save className="w-5 h-5 mr-2" />
+                {isLoading ? 'Saving Treatment...' : 'Save Treatment Record'}
               </Button>
               
               <Button
                 variant="outline"
                 onClick={() => navigate(`/patient-record?patient=${patientId}`)}
+                className="sm:w-auto border-slate-300 hover:bg-slate-50 py-3"
+                size="lg"
               >
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText className="w-5 h-5 mr-2" />
                 View Patient Record
               </Button>
             </div>
