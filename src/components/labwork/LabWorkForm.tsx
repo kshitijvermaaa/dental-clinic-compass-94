@@ -116,7 +116,7 @@ export const LabWorkForm: React.FC<LabWorkFormProps> = ({
     try {
       const labWorkData = {
         patient_id: formData.patient_id,
-        treatment_id: formData.treatment_id || undefined,
+        treatment_id: formData.treatment_id === 'none' ? undefined : formData.treatment_id || undefined,
         lab_type: formData.lab_type,
         lab_name: formData.lab_name,
         work_description: formData.work_description,
@@ -237,7 +237,7 @@ export const LabWorkForm: React.FC<LabWorkFormProps> = ({
                     <SelectValue placeholder="Select treatment" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No related treatment</SelectItem>
+                    <SelectItem value="none">No related treatment</SelectItem>
                     {patientTreatments.map((treatment) => (
                       <SelectItem key={treatment.id} value={treatment.id}>
                         {treatment.procedure_done} - {treatment.treatment_date}
