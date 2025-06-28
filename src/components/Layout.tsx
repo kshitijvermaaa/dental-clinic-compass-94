@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { Home, UserPlus, Search, Calendar, FileText, Settings, Activity, LogOut } from 'lucide-react';
+import { Home, UserPlus, Search, Calendar, FileText, Settings, Activity, LogOut, FlaskConical } from 'lucide-react';
 import { useLocation, Link, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,11 @@ const navigationItems = [
     title: "Appointments",
     url: "/appointments",
     icon: Calendar,
+  },
+  {
+    title: "Lab Work",
+    url: "/lab-work",
+    icon: FlaskConical,
   },
   {
     title: "Prescriptions",

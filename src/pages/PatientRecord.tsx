@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PaymentHistory } from '@/components/patients/PaymentHistory';
+import { LabWorkCard } from '@/components/labwork/LabWorkCard';
+import { LabWorkForm } from '@/components/labwork/LabWorkForm';
+import { LabWorkFilesDialog } from '@/components/labwork/LabWorkFilesDialog';
 import { 
   User, 
   Phone, 
@@ -22,10 +24,12 @@ import {
   Plus,
   Activity,
   Clock,
-  DollarSign
+  DollarSign,
+  FlaskConical
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useLabWork } from '@/hooks/useLabWork';
 
 interface Patient {
   id: string;
@@ -73,15 +77,21 @@ const PatientRecord = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getLabWorkByPatient } = useLabWork();
   
   const patientId = searchParams.get('patient');
   
   const [patient, setPatient] = useState<Patient | null>(null);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patientLabWork, setPatientLabWork] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedPatient, setEditedPatient] = useState<Partial<Patient>>({});
+  const [showLabWorkForm, setShowLabWorkForm] = useState(false);
+  const [showFilesDialog, setShowFilesDialog] = useState(false);
+  const [selectedLabWorkId, setSelectedLabWorkId] = useState('');
+  const [selectedLabWorkTitle, setSelectedLabWorkTitle] = useState('');
 
   useEffect(() => {
     if (patientId) {
@@ -139,6 +149,14 @@ const PatientRecord = () => {
         setAppointments(appointmentsData || []);
       }
 
+      // Fetch lab work
+      try {
+        const labWorkData = await getLabWorkByPatient(patientId);
+        setPatientLabWork(labWorkData);
+      } catch (error) {
+        console.error('Error fetching lab work:', error);
+      }
+
     } catch (error) {
       console.error('Error in fetchPatientData:', error);
       toast({
@@ -184,6 +202,18 @@ const PatientRecord = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewFiles = (labWorkId: string, labWorkTitle: string) => {
+    setSelectedLabWorkId(labWorkId);
+    setSelectedLabWorkTitle(labWorkTitle);
+    setShowFilesDialog(true);
+  };
+
+  const handleEditLabWork = (labWork: any) => {
+    // For now, we'll just show a toast. In a full implementation, 
+    // you'd open an edit form with the lab work data pre-filled
+    console.log('Edit lab work:', labWork);
   };
 
   const calculateAge = (dateOfBirth: string) => {
@@ -463,9 +493,10 @@ const PatientRecord = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="treatments" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="treatments">Treatments</TabsTrigger>
             <TabsTrigger value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger value="lab-work">Lab Work</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
@@ -578,6 +609,45 @@ const PatientRecord = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="lab-work" className="space-y-4">
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <FlaskConical className="w-5 h-5 text-purple-600" />
+                    Lab Work Orders
+                  </CardTitle>
+                  <Button
+                    onClick={() => setShowLabWorkForm(true)}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Lab Work
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {patientLabWork.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    <FlaskConical className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                    <p>No lab work orders yet.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {patientLabWork.map((labWork) => (
+                      <LabWorkCard
+                        key={labWork.id}
+                        labWork={labWork}
+                        onEdit={handleEditLabWork}
+                        onViewFiles={(labWorkId) => handleViewFiles(labWorkId, `${labWork.lab_type} - ${patient.full_name}`)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="payments" className="space-y-4">
             <PaymentHistory patientId={patient.patient_id} />
           </TabsContent>
@@ -600,6 +670,21 @@ const PatientRecord = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Lab Work Form Dialog */}
+      <LabWorkForm 
+        open={showLabWorkForm} 
+        onOpenChange={setShowLabWorkForm}
+        patientId={patient?.patient_id}
+      />
+
+      {/* Files Dialog */}
+      <LabWorkFilesDialog
+        open={showFilesDialog}
+        onOpenChange={setShowFilesDialog}
+        labWorkId={selectedLabWorkId}
+        labWorkTitle={selectedLabWorkTitle}
+      />
     </div>
   );
 };

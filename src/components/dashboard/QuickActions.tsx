@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, UserPlus, Calendar, Search, FileText, Stethoscope, AlertTriangle } from 'lucide-react';
+import { Plus, UserPlus, Calendar, Search, FileText, Stethoscope, AlertTriangle, FlaskConical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const QuickActions: React.FC = () => {
@@ -57,6 +56,16 @@ export const QuickActions: React.FC = () => {
           <Calendar className="w-4 h-4" />
           Schedule Appointment
         </Button>
+        
+        <Button 
+          variant="outline" 
+          className="w-full justify-start gap-3"
+          onClick={() => navigate('/lab-work')}
+        >
+          <FlaskConical className="w-4 h-4" />
+          Create Lab Work
+        </Button>
+        
         <Button 
           variant="outline" 
           className="w-full justify-start gap-3"
